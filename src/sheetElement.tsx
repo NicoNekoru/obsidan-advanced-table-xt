@@ -163,7 +163,6 @@ export class SheetElement extends MarkdownRenderChild
 				(headerCol) =>
 					headerCol.every((headerCol) => /^[-\s]+$/.test(headerCol))
 			);
-
 	}
 
 	buildDomTable()
@@ -198,9 +197,8 @@ export class SheetElement extends MarkdownRenderChild
 		let cellTag: keyof HTMLElementTagNameMap = 'td';
 		let cell: HTMLTableCellElement;
 
-		if (columnIndex < this.headerCol || rowIndex < this.headerRow) cellTag = 'th';
-		else if (columnIndex === this.headerCol) return;
-
+		if (columnIndex === this.headerCol || rowIndex == this.headerRow) return;
+		else if (columnIndex < this.headerCol || rowIndex < this.headerRow) cellTag = 'th';
 
 		if (cellContent == MERGE_LEFT_SIGNIFIER && columnIndex > 0) 
 		{
