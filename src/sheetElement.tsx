@@ -63,47 +63,38 @@ export class SheetElement extends MarkdownRenderChild {
 				headerRow.every((headerCol) => /^[-\s]+$/.test(headerCol))
 		);
 
-		console.log(this.headerRow);
-
 		// transpose grid
 		this.headerCol = this.contentGrid
 			.map((_, i, arr) => arr[i])
 			.findIndex(
 				(headerCol) =>
 					headerCol.length == this.rowMaxLength &&
-					headerCol.every((headerCol) => /^[/\s]+$/.test(headerCol))
+					headerCol.every((headerCol) => /^[-\s]+$/.test(headerCol))
 			);
+
+		console.log(this.headerRow, this.headerCol);
 
 		for (let index = 0; index < this.contentGrid.length; index++) {
 			const line = this.contentGrid[index];
+			let row = tableBody.createEl("tr"),
+				cellNodeR: keyof HTMLElementTagNameMap | null = null;
 
 			if (index < this.headerRow) {
-				const row = tableHead.createEl("tr");
-				for (
-					let columnIndex = 0;
-					columnIndex < line.length;
-					columnIndex++
-				) {
-					const cell = row.createEl("th");
-					MarkdownRenderer.render(
-						this.app,
-						line[columnIndex],
-						cell,
-						"",
-						this
-					);
-				}
+				row = tableHead.createEl("tr");
+				cellNodeR = "th";
+			} else if (index === this.headerRow) continue;
 
-				continue;
-			} else if (index == this.headerRow) continue;
-
-			const row = tableBody.createEl("tr");
 			for (
 				let columnIndex = 0;
 				columnIndex < line.length;
 				columnIndex++
 			) {
-				const cell = row.createEl("td");
+				let cellNodeC: keyof HTMLElementTagNameMap | null = null;
+				if (columnIndex < this.headerCol) {
+					cellNodeC = "th";
+				} else if (columnIndex === this.headerCol) continue;
+
+				const cell = row.createEl(cellNodeR || cellNodeC || "td");
 				MarkdownRenderer.render(
 					this.app,
 					line[columnIndex],
