@@ -6,6 +6,10 @@ import {
 	MarkdownRenderer,
 } from 'obsidian';
 
+// TODO: Move these to settings
+const MERGE_UP_SIGNIFIER = '^',
+	MERGE_LEFT_SIGNIFIER = '<';
+
 export class SheetElement extends MarkdownRenderChild 
 {
 	private cellMaxLength = 0;
@@ -13,6 +17,10 @@ export class SheetElement extends MarkdownRenderChild
 	private headerRow: number;
 	private headerCol: number;
 	private contentGrid: string[][];
+	private table: HTMLTableElement;
+	private tableHead: HTMLTableSectionElement;
+	private tableBody: HTMLTableSectionElement;
+	private domGrid: HTMLTableCellElement[][] = [];
 
 	constructor(
 		private readonly el: HTMLElement,
@@ -40,72 +48,15 @@ export class SheetElement extends MarkdownRenderChild
 		this.normalizeGrid();
 
 		// Start building DOM element
-		const table = this.el.createEl('table');
-		const tableHead = table.createEl('thead');
-		const tableBody = table.createEl('tbody');
+		this.table = this.el.createEl('table');
+		this.tableHead = this.table.createEl('thead');
+		this.tableBody = this.table.createEl('tbody');
 
 		// Find header boundaries
 		this.getHeaderBoundaries();
 
 		// Build cells into DOM
-		const domGrid: HTMLTableCellElement[][] = [];
-		for (let index = 0; index < this.contentGrid.length; index++) 
-		{
-			const line = this.contentGrid[index];
-			let row = tableBody.createEl('tr'),
-				cellNodeR: keyof HTMLElementTagNameMap | null = null;
-
-			if (index < this.headerRow) 
-			{
-				row = tableHead.createEl('tr');
-				cellNodeR = 'th';
-			} 
-			else if (index === this.headerRow) continue;
-
-			domGrid[index] = [];
-
-			for (
-				let columnIndex = 0;
-				columnIndex < line.length;
-				columnIndex++
-			) 
-			{
-				let cellNodeC: keyof HTMLElementTagNameMap | null = null;
-				if (columnIndex < this.headerCol) 
-				{
-					cellNodeC = 'th';
-				}
-				else if (columnIndex === this.headerCol) continue;
-
-				let cell: HTMLTableCellElement;
-
-				if (line[columnIndex] == '<' && columnIndex > 0) 
-				{
-					cell = domGrid[index][columnIndex - 1];
-					cell?.colSpan || Object.assign(cell, { colSpan: 1 });
-					cell.colSpan += 1;
-				}
-				else if (line[columnIndex] == '^' && index > 0) 
-				{
-					cell = domGrid[index - 1][columnIndex];
-					cell?.rowSpan || Object.assign(cell, { rowSpan: 1 });
-					cell.rowSpan += 1;
-				}
-				else 
-				{
-					cell = row.createEl(cellNodeR || cellNodeC || 'td');
-					MarkdownRenderer.render(
-						this.app,
-						line[columnIndex],
-						cell,
-						'',
-						this
-					);
-				}
-
-				domGrid[index][columnIndex] = cell;
-			}
-		}
+		this.buildDomTable();
 	}
 
 	onunload() 
@@ -213,5 +164,68 @@ export class SheetElement extends MarkdownRenderChild
 					headerCol.every((headerCol) => /^[-\s]+$/.test(headerCol))
 			);
 
+	}
+
+	buildDomTable()
+	{
+		for (
+			let rowIndex = 0; 
+			rowIndex < this.contentGrid.length; 
+			rowIndex++
+		) this.buildDomRow(rowIndex);
+	}
+
+	buildDomRow(rowIndex: number)
+	{
+		const rowContents = this.contentGrid[rowIndex];
+		let rowNode = this.tableBody.createEl('tr');
+
+		if (rowIndex < this.headerRow) rowNode = this.tableHead.createEl('tr');
+		else if (rowIndex === this.headerRow) return;
+
+		this.domGrid[rowIndex] = [];
+
+		for (
+			let columnIndex = 0;
+			columnIndex < rowContents.length;
+			columnIndex++
+		) this.buildDomCell(rowIndex, columnIndex, rowNode);
+	}
+
+	buildDomCell(rowIndex: number, columnIndex: number, rowNode: HTMLElement)
+	{
+		const cellContent = this.contentGrid[rowIndex][columnIndex];
+		let cellTag: keyof HTMLElementTagNameMap = 'td';
+		let cell: HTMLTableCellElement;
+
+		if (columnIndex < this.headerCol || rowIndex < this.headerRow) cellTag = 'th';
+		else if (columnIndex === this.headerCol) return;
+
+
+		if (cellContent == MERGE_LEFT_SIGNIFIER && columnIndex > 0) 
+		{
+			cell = this.domGrid[rowIndex][columnIndex - 1];
+			cell?.colSpan || Object.assign(cell, { colSpan: 1 });
+			cell.colSpan += 1;
+		}
+		else if (cellContent == MERGE_UP_SIGNIFIER && rowIndex > 0) 
+		{
+			cell = this.domGrid[rowIndex - 1][columnIndex];
+			cell?.rowSpan || Object.assign(cell, { rowSpan: 1 });
+			cell.rowSpan += 1;
+		}
+		else 
+		{
+			cell = rowNode.createEl(cellTag);
+			MarkdownRenderer.render(
+				this.app,
+				cellContent,
+				cell,
+				'',
+				this
+			);
+		}
+
+		return this.domGrid[rowIndex][columnIndex] = cell;
 	}
 }
