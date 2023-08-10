@@ -1,27 +1,31 @@
-import { PluginSettingTab, Setting, App } from "obsidian";
-import { ObsidianSpreadsheet } from "./main";
+import { PluginSettingTab, Setting, App } from 'obsidian';
+import { ObsidianSpreadsheet } from './main';
 
-export class SampleSettingTab extends PluginSettingTab {
+export class SampleSettingTab extends PluginSettingTab 
+{
 	plugin: ObsidianSpreadsheet;
 
-	constructor(app: App, plugin: ObsidianSpreadsheet) {
+	constructor(app: App, plugin: ObsidianSpreadsheet) 
+	{
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
-	display(): void {
+	display(): void 
+	{
 		const { containerEl } = this;
 
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName("Setting #1")
-			.setDesc("It's a secret")
+			.setName('Setting #1')
+			.setDesc('It\'s a secret')
 			.addText((text) =>
 				text
-					.setPlaceholder("Enter your secret")
+					.setPlaceholder('Enter your secret')
 					.setValue(this.plugin.settings.mySetting)
-					.onChange(async (value) => {
+					.onChange(async (value) => 
+					{
 						this.plugin.settings.mySetting = value;
 						await this.plugin.saveSettings();
 					})
