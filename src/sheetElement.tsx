@@ -29,17 +29,22 @@ export class SheetElement extends MarkdownRenderChild
 	{
 		// TODO: refactor into never nesting
 		console.log('loaded');
+
+		// Parse code block input
 		this.contentGrid = this.source
 			.split('\n')
-			.map((row) => row.split(/(?<!\\)\|/));
+			.map((row) => row.split(/(?<!\\)\|/)
+				.map(cell => cell.trim()));
 
+		// Check if grid is valid (every line starts and ends with `|`)
 		if (
 			!this.contentGrid.every(
 				(row) => !row.pop()?.trim() && !row.shift()?.trim()
 			)
-		)
-			return this.displayError('Malformed table');
+		) return this.displayError('Malformed table');
 
+
+		// Find grid dimensions
 		for (let rowIndex = 0; rowIndex < this.contentGrid.length; rowIndex++) 
 		{
 			const row = this.contentGrid[rowIndex];
@@ -50,6 +55,7 @@ export class SheetElement extends MarkdownRenderChild
 					this.cellMaxLength = row[colIndex].trim().length;
 		}
 
+		// Fix grid dimensions
 		this.contentGrid = this.contentGrid.map((line) =>
 			Array.from(
 				{ ...line, length: this.rowMaxLength },
@@ -57,10 +63,12 @@ export class SheetElement extends MarkdownRenderChild
 			)
 		);
 
+		// Start building DOM element
 		const table = this.el.createEl('table');
 		const tableHead = table.createEl('thead');
 		const tableBody = table.createEl('tbody');
 
+		// Find header boundaries
 		this.headerRow = this.contentGrid.findIndex(
 			(headerRow) =>
 				headerRow.length == this.rowMaxLength &&
@@ -75,9 +83,11 @@ export class SheetElement extends MarkdownRenderChild
 					headerCol.length == this.rowMaxLength &&
 					headerCol.every((headerCol) => /^[-\s]+$/.test(headerCol))
 			);
+		
+		// Find merged cells
+		this.contentGrid.map((row, i) => row.map(cell => cell == '<'));
 
-		console.log(this.headerRow, this.headerCol);
-
+		// Build cells into DOM
 		for (let index = 0; index < this.contentGrid.length; index++) 
 		{
 			const line = this.contentGrid[index];

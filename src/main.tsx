@@ -23,7 +23,6 @@ export class ObsidianSpreadsheet extends Plugin
 			}
 		);
 
-		// This adds a simple command that can be triggered anywhere
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 	}
