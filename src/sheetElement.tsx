@@ -31,37 +31,13 @@ export class SheetElement extends MarkdownRenderChild
 		console.log('spreadsheets loaded');
 
 		// Parse code block input
-		this.contentGrid = this.source
-			.split('\n')
-			.map((row) => row.split(/(?<!\\)\|/)
-				.map(cell => cell.trim()));
+		this.parseInputToGrid();
 
 		// Check if grid is valid (every line starts and ends with `|`)
-		if (
-			!this.contentGrid.every(
-				(row) => !row.pop()?.trim() && !row.shift()?.trim()
-			)
-		) return this.displayError('Malformed table');
+		this.validateInput();
 
-
-		// Find grid dimensions
-		for (let rowIndex = 0; rowIndex < this.contentGrid.length; rowIndex++) 
-		{
-			const row = this.contentGrid[rowIndex];
-			if (this.rowMaxLength < row.length) this.rowMaxLength = row.length;
-
-			for (let colIndex = 0; colIndex < row.length; colIndex++)
-				if (this.cellMaxLength < row[colIndex].trim().length)
-					this.cellMaxLength = row[colIndex].trim().length;
-		}
-
-		// Fix grid dimensions
-		this.contentGrid = this.contentGrid.map((line) =>
-			Array.from(
-				{ ...line, length: this.rowMaxLength },
-				(cell) => cell || ''
-			)
-		);
+		// Find and fix grid dimensions
+		this.normalizeGrid();
 
 		// Start building DOM element
 		const table = this.el.createEl('table');
@@ -69,24 +45,7 @@ export class SheetElement extends MarkdownRenderChild
 		const tableBody = table.createEl('tbody');
 
 		// Find header boundaries
-		this.headerRow = this.contentGrid.findIndex(
-			(headerRow) =>
-				headerRow.every((headerCol) => /^[-\s]+$/.test(headerCol))
-		);
-
-		// transpose grid
-		this.headerCol = this.contentGrid[0].map((_, i) => 
-			this.contentGrid.map(row => row[i])
-		)
-			.findIndex(
-				(headerCol) =>
-					headerCol.every((headerCol) => /^[-\s]+$/.test(headerCol))
-			);
-
-		// console.log({col: this.headerCol , row: this.headerRow, grid: this.contentGrid});
-		
-		// Find merged cells
-		// this.contentGrid.map((row) => row.map(cell => cell == '<' ? '<' : undefined));
+		this.getHeaderBoundaries();
 
 		// Build cells into DOM
 		const domGrid: HTMLTableCellElement[][] = [];
@@ -199,5 +158,60 @@ export class SheetElement extends MarkdownRenderChild
 			cls: 'obs-sheets_error',
 		});
 		this.unload();
+	}
+
+	parseInputToGrid()
+	{
+		this.contentGrid = this.source
+			.split('\n')
+			.map((row) => row.split(/(?<!\\)\|/)
+				.map(cell => cell.trim()));
+	}
+
+	validateInput()
+	{
+		if (
+			!this.contentGrid.every(
+				(row) => !row.pop()?.trim() && !row.shift()?.trim()
+			)
+		) return this.displayError('Malformed table');
+	}
+
+	normalizeGrid()
+	{
+		for (let rowIndex = 0; rowIndex < this.contentGrid.length; rowIndex++) 
+		{
+			const row = this.contentGrid[rowIndex];
+			if (this.rowMaxLength < row.length) this.rowMaxLength = row.length;
+
+			for (let colIndex = 0; colIndex < row.length; colIndex++)
+				if (this.cellMaxLength < row[colIndex].trim().length)
+					this.cellMaxLength = row[colIndex].trim().length;
+		}
+
+		this.contentGrid = this.contentGrid.map((line) =>
+			Array.from(
+				{ ...line, length: this.rowMaxLength },
+				(cell) => cell || ''
+			)
+		);
+	}
+
+	getHeaderBoundaries()
+	{
+		this.headerRow = this.contentGrid.findIndex(
+			(headerRow) =>
+				headerRow.every((headerCol) => /^[-\s]+$/.test(headerCol))
+		);
+
+		// transpose grid
+		this.headerCol = this.contentGrid[0].map((_, i) => 
+			this.contentGrid.map(row => row[i])
+		)
+			.findIndex(
+				(headerCol) =>
+					headerCol.every((headerCol) => /^[-\s]+$/.test(headerCol))
+			);
+
 	}
 }
