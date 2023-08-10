@@ -2,7 +2,7 @@ import {
 	App,
 	MarkdownPostProcessorContext,
 	MarkdownRenderChild,
-	MarkdownView,
+	// MarkdownView,
 	MarkdownRenderer,
 } from 'obsidian';
 
@@ -22,13 +22,13 @@ export class SheetElement extends MarkdownRenderChild
 	) 
 	{
 		super(el);
-		console.log(this);
+		// console.log(this);
 	}
 
 	onload() 
 	{
 		// TODO: refactor into never nesting
-		console.log('loaded');
+		console.log('spreadsheets loaded');
 
 		// Parse code block input
 		this.contentGrid = this.source
@@ -71,23 +71,25 @@ export class SheetElement extends MarkdownRenderChild
 		// Find header boundaries
 		this.headerRow = this.contentGrid.findIndex(
 			(headerRow) =>
-				headerRow.length == this.rowMaxLength &&
 				headerRow.every((headerCol) => /^[-\s]+$/.test(headerCol))
 		);
 
 		// transpose grid
-		this.headerCol = this.contentGrid
-			.map((_, i, arr) => arr[i])
+		this.headerCol = this.contentGrid[0].map((_, i) => 
+			this.contentGrid.map(row => row[i])
+		)
 			.findIndex(
 				(headerCol) =>
-					headerCol.length == this.rowMaxLength &&
 					headerCol.every((headerCol) => /^[-\s]+$/.test(headerCol))
 			);
+
+		// console.log({col: this.headerCol , row: this.headerRow, grid: this.contentGrid});
 		
 		// Find merged cells
-		this.contentGrid.map((row, i) => row.map(cell => cell == '<'));
+		// this.contentGrid.map((row) => row.map(cell => cell == '<' ? '<' : undefined));
 
 		// Build cells into DOM
+		const domGrid: HTMLTableCellElement[][] = [];
 		for (let index = 0; index < this.contentGrid.length; index++) 
 		{
 			const line = this.contentGrid[index];
@@ -100,6 +102,8 @@ export class SheetElement extends MarkdownRenderChild
 				cellNodeR = 'th';
 			} 
 			else if (index === this.headerRow) continue;
+
+			domGrid[index] = [];
 
 			for (
 				let columnIndex = 0;
@@ -114,14 +118,33 @@ export class SheetElement extends MarkdownRenderChild
 				}
 				else if (columnIndex === this.headerCol) continue;
 
-				const cell = row.createEl(cellNodeR || cellNodeC || 'td');
-				MarkdownRenderer.render(
-					this.app,
-					line[columnIndex],
-					cell,
-					'',
-					this
-				);
+				let cell: HTMLTableCellElement;
+
+				if (line[columnIndex] == '<' && columnIndex > 0) 
+				{
+					cell = domGrid[index][columnIndex - 1];
+					cell?.colSpan || Object.assign(cell, { colSpan: 1 });
+					cell.colSpan += 1;
+				}
+				else if (line[columnIndex] == '^' && index > 0) 
+				{
+					cell = domGrid[index - 1][columnIndex];
+					cell?.rowSpan || Object.assign(cell, { rowSpan: 1 });
+					cell.rowSpan += 1;
+				}
+				else 
+				{
+					cell = row.createEl(cellNodeR || cellNodeC || 'td');
+					MarkdownRenderer.render(
+						this.app,
+						line[columnIndex],
+						cell,
+						'',
+						this
+					);
+				}
+
+				domGrid[index][columnIndex] = cell;
 			}
 		}
 	}
@@ -129,6 +152,7 @@ export class SheetElement extends MarkdownRenderChild
 	onunload() 
 	{
 		// TODO: format user code block on unload -> scrap all of this
+		/*
 		console.log('unloading');
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 		const queryProps = this.ctx.getSectionInfo(this.el);
@@ -165,6 +189,7 @@ export class SheetElement extends MarkdownRenderChild
 			// 	return this.displayError(e)
 			// }
 		}
+		*/
 	}
 
 	displayError(error?: string) 

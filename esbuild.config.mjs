@@ -37,7 +37,7 @@ const context = await esbuild.context({
 	logLevel: 'info',
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outfile: '../TestObsidianVault/.obsidian/plugins/obsidian-sample-plugin/main.js',
+	outfile: './main.js',
 });
 
 if (prod) 

@@ -7,7 +7,7 @@ export class ObsidianSpreadsheet extends Plugin
 {
 	async onload() 
 	{
-		console.log('loading plugin');
+		console.log('loading spreadsheet plugin');
 		this.registerMarkdownCodeBlockProcessor(
 			'xlsx',
 			async (
@@ -16,10 +16,7 @@ export class ObsidianSpreadsheet extends Plugin
 				ctx: MarkdownPostProcessorContext
 			) => 
 			{
-				console.log('updated');
-
 				ctx.addChild(new SheetElement(el, source.trim(), ctx, this.app));
-				console.log({ source, el, ctx });
 			}
 		);
 
@@ -29,7 +26,7 @@ export class ObsidianSpreadsheet extends Plugin
 
 	onunload() 
 	{
-		console.log('unloading plugin');
+		console.log('unloading spreadsheet plugin');
 	}
 }
 
