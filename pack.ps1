@@ -1,1 +1,0 @@
-Compress-Archive -Path 'manifest.json', 'main.js', 'styles.css' -DestinationPath './dist.zip'
