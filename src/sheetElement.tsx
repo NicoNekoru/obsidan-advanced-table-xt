@@ -63,7 +63,7 @@ export class SheetElement extends MarkdownRenderChild {
 				headerRow.every((headerCol) => /^[-\s]+$/.test(headerCol))
 		);
 
-		console.log(this.headerRow)
+		console.log(this.headerRow);
 
 		// transpose grid
 		this.headerCol = this.contentGrid
@@ -95,7 +95,7 @@ export class SheetElement extends MarkdownRenderChild {
 				}
 
 				continue;
-			} else if (index == this.headerRow) continue
+			} else if (index == this.headerRow) continue;
 
 			const row = tableBody.createEl("tr");
 			for (
