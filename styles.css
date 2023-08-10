@@ -6,3 +6,30 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+.obs-sheets_error {
+	color: rgb(255, 100, 100);
+	background-color: rgba(240, 128, 128, 20%);
+	text-rendering: optimizeLegibility;
+	-webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+	color-scheme: dark;
+	-webkit-user-select: text;
+	white-space: break-spaces;
+	word-break: break-word;
+	overflow-wrap: anywhere;
+	-webkit-user-modify: read-write-plaintext-only;
+	tab-size: 4;
+	box-sizing: border-box;
+	font-size: var(--code-size);
+	font-family: var(--font-monospace);
+	clear: left;
+	left: 0;
+	right: 0;
+	margin: 0 !important;
+	display: block;
+	position: relative;
+	padding: 0;
+	max-width: var(--file-line-width);
+	padding-left: var(--size-4-4);
+    text-align: center;
+}
