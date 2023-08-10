@@ -1,11 +1,11 @@
 {
-	"id": "spreadsheet-plugin",
+	"id": "obsidian-sheets-plugin",
 	"name": "Obsidian Sheets",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "This is a plugin that brings spreadsheets and more similar views to obsidian",
+	"description": "More table functionality and customizability",
 	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
+	"authorUrl": "https://github.com/NicoNekoru",
 	"fundingUrl": "https://obsidian.md/pricing",
 	"isDesktopOnly": false
 }

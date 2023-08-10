@@ -9,7 +9,7 @@ export class ObsidianSpreadsheet extends Plugin
 	{
 		console.log('loading spreadsheet plugin');
 		this.registerMarkdownCodeBlockProcessor(
-			'xlsx',
+			'sheet',
 			async (
 				source: string,
 				el: HTMLElement,
