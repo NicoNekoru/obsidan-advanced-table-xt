@@ -3,8 +3,8 @@
 	"name": "Obsidian Sheets",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "More table functionality and customizability",
-	"author": "Obsidian",
+	"description": "Vertical headers, merged cells, and custom css tables with advanced table compatability",
+	"author": "NicoNekoru",
 	"authorUrl": "https://github.com/NicoNekoru",
 	"fundingUrl": "https://obsidian.md/pricing",
 	"isDesktopOnly": false
