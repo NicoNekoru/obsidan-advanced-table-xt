@@ -50,7 +50,7 @@ Use the `sheet` language tag and start using Obsidian Sheets with custom css!
 ````
 ![custom css](./assets/customCss.png)
 
-And it works with advanced tables!
+And it works with [advanced tables](https://github.com/tgrosinger/advanced-tables-obsidian/)!
 
 # Future functionality
 - [x] Merging
