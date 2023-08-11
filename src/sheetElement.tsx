@@ -278,8 +278,7 @@ export class SheetElement extends MarkdownRenderChild
 			cls = cellStyles.match(/\.\S+/g) || [];
 			cls.forEach(cssClass => 
 			{
-				cellStyle = { ...cellStyle, ...(this.styles[cssClass.slice(1) as keyof typeof this.styles] as object) };
-				this.styles[cssClass.slice(1) as keyof typeof this.styles];
+				cellStyle = { ...cellStyle, ...(this.styles?.[cssClass.slice(1) as keyof typeof this.styles] as object || {}) };
 			});
 		}
 
