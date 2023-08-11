@@ -1,5 +1,5 @@
 import { MarkdownPostProcessorContext, Plugin, MarkdownPreviewRenderer, htmlToMarkdown } from 'obsidian';
-import { SheetSettingsTab } from './settings';
+// import { SheetSettingsTab } from './settings';
 import { SheetElement } from './sheetElement';
 // Remember to rename these classes and interfaces!
 
@@ -32,7 +32,7 @@ export class ObsidianSpreadsheet extends Plugin
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SheetSettingsTab(this.app, this));
+		// this.addSettingTab(new SheetSettingsTab(this.app, this));
 	}
 
 	onunload() 
