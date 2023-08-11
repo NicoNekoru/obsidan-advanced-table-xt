@@ -1,3 +1,4 @@
+import { ObsidianSpreadsheet } from 'main';
 import {
 	App,
 	MarkdownPostProcessorContext,
@@ -5,18 +6,35 @@ import {
 	// MarkdownView,
 	MarkdownRenderer,
 } from 'obsidian';
+import type { Properties } from 'csstype';
+import * as JSON5 from 'json5';
 
 // TODO: Move these to settings
 const MERGE_UP_SIGNIFIER = '^',
-	MERGE_LEFT_SIGNIFIER = '<';
+	MERGE_LEFT_SIGNIFIER = '<',
+	HEADER_DELIMETER = '-',
+	META_DELIMETER = '---';
+
+interface ISheetMetaData
+{
+	classes: { [key: string]: Properties };
+	log: boolean;
+}
 
 export class SheetElement extends MarkdownRenderChild 
 {
+	private newLineRE: RegExp;
+	private cellBorderRE: RegExp;
+	private metaRE: RegExp;
+	private headerRE: RegExp;
+	private contentGrid: string[][];
+	private metadata: Partial<ISheetMetaData>;
+	private stylesheet: HTMLStyleElement;
+	private styles: Properties;
 	private cellMaxLength = 0;
 	private rowMaxLength = 0;
 	private headerRow: number;
 	private headerCol: number;
-	private contentGrid: string[][];
 	private table: HTMLTableElement;
 	private tableHead: HTMLTableSectionElement;
 	private tableBody: HTMLTableSectionElement;
@@ -26,10 +44,12 @@ export class SheetElement extends MarkdownRenderChild
 		private readonly el: HTMLElement,
 		private readonly source: string,
 		private readonly ctx: MarkdownPostProcessorContext,
-		private readonly app: App
+		private readonly app: App,
+		private readonly plugin: ObsidianSpreadsheet,
 	) 
 	{
 		super(el);
+		// TODO: Handle settings here -> move :11-12
 		// console.log(this);
 	}
 
@@ -37,6 +57,8 @@ export class SheetElement extends MarkdownRenderChild
 	{
 		// TODO: refactor into never nesting
 		console.log('spreadsheets loaded');
+
+		this.initRegex();
 
 		// Parse code block input
 		this.parseInputToGrid();
@@ -49,6 +71,7 @@ export class SheetElement extends MarkdownRenderChild
 
 		// Start building DOM element
 		this.table = this.el.createEl('table');
+		this.table.id = '';
 		this.tableHead = this.table.createEl('thead');
 		this.tableBody = this.table.createEl('tbody');
 
@@ -102,6 +125,14 @@ export class SheetElement extends MarkdownRenderChild
 		*/
 	}
 
+	initRegex()
+	{
+		this.metaRE = new RegExp(String.raw`^${META_DELIMETER}\s*?$\n*`, 'm');
+		this.newLineRE = new RegExp(String.raw`\n`);
+		this.cellBorderRE = new RegExp(String.raw`(?<!\\)\|`);
+		this.headerRE = new RegExp(String.raw`^[${HEADER_DELIMETER}\s]+?$`);
+	}
+
 	displayError(error?: string) 
 	{
 		this.el.createDiv({
@@ -113,10 +144,48 @@ export class SheetElement extends MarkdownRenderChild
 
 	parseInputToGrid()
 	{
-		this.contentGrid = this.source
-			.split('\n')
-			.map((row) => row.split(/(?<!\\)\|/)
+		if (!this.metaRE.test(this.source)) return this.contentGrid = 
+			this.source.split(this.newLineRE)
+				.map((row) => row.split(this.cellBorderRE)
+					.map(cell => cell.trim()));
+		
+		const [meta, source] = this.source.split(this.metaRE);
+
+		this.contentGrid = source.split(this.newLineRE)
+			.map((row) => row.split(this.cellBorderRE)
 				.map(cell => cell.trim()));
+
+		this.parseMetadata(meta);
+	}
+
+	parseMetadata(meta: string)
+	{
+		let metadata: Partial<ISheetMetaData>;
+
+		try 
+		{
+			metadata = JSON5.parse(meta);
+		} 
+		catch (error) 
+		{
+			return this.displayError('Metadata is not proper JSON');
+		}
+
+		// Separate this out when more metadata is introduced
+		if (metadata.classes) 
+		{
+			this.stylesheet = this.el.createEl('style');
+			this.stylesheet.innerHTML = Object.entries(metadata.classes)
+				.map(([className, styleProps]: [string, Properties]) => 
+					'.' + className + ' {\n' +
+					Object.entries(styleProps)
+						.map(([propName, propValue]) => `\t${propName}: ${propValue} !important`)
+						.join(';\n')
+					+ '\n}'
+				).join('\n\n');
+		}
+		// TODO: Add logging and debugging in metadata
+		// if (metadata.log) this.logging = true
 	}
 
 	validateInput()
@@ -152,7 +221,7 @@ export class SheetElement extends MarkdownRenderChild
 	{
 		this.headerRow = this.contentGrid.findIndex(
 			(headerRow) =>
-				headerRow.every((headerCol) => /^[-\s]+$/.test(headerCol))
+				headerRow.every((headerCol) => this.headerRE.test(headerCol))
 		);
 
 		// transpose grid
@@ -161,7 +230,7 @@ export class SheetElement extends MarkdownRenderChild
 		)
 			.findIndex(
 				(headerCol) =>
-					headerCol.every((headerCol) => /^[-\s]+$/.test(headerCol))
+					headerCol.every((headerCol) => this.headerRE.test(headerCol))
 			);
 	}
 
@@ -193,7 +262,15 @@ export class SheetElement extends MarkdownRenderChild
 
 	buildDomCell(rowIndex: number, columnIndex: number, rowNode: HTMLElement)
 	{
-		const cellContent = this.contentGrid[rowIndex][columnIndex];
+		const [
+			cellContent, 
+			cellStyles
+		] = this.contentGrid[rowIndex][columnIndex].split(/(?<!\\)~/);
+
+		let cls: string[] = [];
+
+		if (cellStyles) cls = cellStyles.match(/\.\S+/g) || [];
+
 		let cellTag: keyof HTMLElementTagNameMap = 'td';
 		let cell: HTMLTableCellElement;
 
@@ -214,7 +291,7 @@ export class SheetElement extends MarkdownRenderChild
 		}
 		else 
 		{
-			cell = rowNode.createEl(cellTag);
+			cell = rowNode.createEl(cellTag, { cls });
 			MarkdownRenderer.render(
 				this.app,
 				cellContent,

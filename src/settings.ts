@@ -1,7 +1,7 @@
 import { PluginSettingTab, Setting, App } from 'obsidian';
 import { ObsidianSpreadsheet } from './main';
 
-export class SampleSettingTab extends PluginSettingTab 
+export class SheetSettingsTab extends PluginSettingTab 
 {
 	plugin: ObsidianSpreadsheet;
 
