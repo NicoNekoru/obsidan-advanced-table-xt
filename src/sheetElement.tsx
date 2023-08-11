@@ -29,7 +29,6 @@ export class SheetElement extends MarkdownRenderChild
 	private headerRE: RegExp;
 	private contentGrid: string[][];
 	private metadata: Partial<ISheetMetaData>;
-	private stylesheet: HTMLStyleElement;
 	private styles: Properties;
 	private cellMaxLength = 0;
 	private rowMaxLength = 0;
@@ -177,15 +176,6 @@ export class SheetElement extends MarkdownRenderChild
 		if (metadata.classes) 
 		{
 			this.styles = metadata.classes;
-			this.stylesheet = document.querySelector('head')?.createEl('style') || this.el.createEl('style');
-			this.stylesheet.innerHTML = Object.entries(metadata.classes)
-				.map(([className, styleProps]: [string, Properties]) => 
-					'.' + className + ' {\n' +
-					Object.entries(styleProps)
-						.map(([propName, propValue]) => `\t${propName}: ${propValue} !important;`)
-						.join('\n')
-					+ '\n}'
-				).join('\n\n');
 		}
 		// TODO: Add logging and debugging in metadata
 		// if (metadata.log) this.logging = true
