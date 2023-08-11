@@ -171,16 +171,19 @@ export class SheetElement extends MarkdownRenderChild
 			return this.displayError('Metadata is not proper JSON');
 		}
 
+		this.metadata = metadata;
+
 		// Separate this out when more metadata is introduced
 		if (metadata.classes) 
 		{
-			this.stylesheet = this.el.createEl('style');
+			this.styles = metadata.classes;
+			this.stylesheet = document.querySelector('head')?.createEl('style') || this.el.createEl('style');
 			this.stylesheet.innerHTML = Object.entries(metadata.classes)
 				.map(([className, styleProps]: [string, Properties]) => 
 					'.' + className + ' {\n' +
 					Object.entries(styleProps)
-						.map(([propName, propValue]) => `\t${propName}: ${propValue} !important`)
-						.join(';\n')
+						.map(([propName, propValue]) => `\t${propName}: ${propValue} !important;`)
+						.join('\n')
 					+ '\n}'
 				).join('\n\n');
 		}
@@ -268,8 +271,17 @@ export class SheetElement extends MarkdownRenderChild
 		] = this.contentGrid[rowIndex][columnIndex].split(/(?<!\\)~/);
 
 		let cls: string[] = [];
+		let cellStyle: Properties = {};
 
-		if (cellStyles) cls = cellStyles.match(/\.\S+/g) || [];
+		if (cellStyles) 
+		{
+			cls = cellStyles.match(/\.\S+/g) || [];
+			cls.forEach(cssClass => 
+			{
+				cellStyle = { ...cellStyle, ...(this.styles[cssClass.slice(1) as keyof typeof this.styles] as object) };
+				this.styles[cssClass.slice(1) as keyof typeof this.styles];
+			});
+		}
 
 		let cellTag: keyof HTMLElementTagNameMap = 'td';
 		let cell: HTMLTableCellElement;
@@ -299,6 +311,7 @@ export class SheetElement extends MarkdownRenderChild
 				'',
 				this
 			);
+			Object.assign(cell.style, cellStyle);
 		}
 
 		return this.domGrid[rowIndex][columnIndex] = cell;

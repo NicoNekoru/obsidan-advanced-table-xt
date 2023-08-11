@@ -31,8 +31,29 @@ Create a normal markdown table and wrap it in a codefence with the `sheet` langu
 ````
 ![rendered vertical headers](./assets/renderedVerticalHeaders.png)
 
+````md
+```sheet
+{
+	classes: { 
+		class1: { 
+			"color": "blue",
+		},
+        class2: {
+			backgroundColor: "#fff",
+        }
+	},
+}
+---
+| I                 | -   | have | meta                  | data        | !!!  |
+| ----------------- | --- | ---- | --------------------- | ----------- | ---- |
+| group 1           | -   | foo  | bar ~ .class1 .class2 | baz         | test |
+| group 2 ~ .class1 | -   | 1    | ^                     | 3 ~ .class2 | 4    |
+
+```
+````
+
 # Future functionality
 - [x] Merging
 - [x] Vertical headers
-- [ ] Cell custom styling
+- [x] Cell custom styling
 - [ ] Automatic `advanced-table`-like formatting 
