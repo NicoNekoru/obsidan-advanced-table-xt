@@ -15,7 +15,6 @@ Create a normal markdown table and start using Obsidian sheets:
 | ---------------------------------- | --- | ------------ | ----- |
 | Use `<` to merge cells to the left | <   | Merged cell! | <     |
 | Use `^` to merge cells up          | <   | ^            | ^     |
-| ^                                  | ^   | ^            | ^     |
 ````
 ![rendered merge functionality](./assets/renderedMerge.png)
 
