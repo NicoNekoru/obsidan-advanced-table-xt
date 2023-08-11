@@ -8,29 +8,27 @@ This is a plugin for [Obsidian](https://obsidian.md) that brings greater functio
 
 # How to use
 
-Create a normal markdown table and wrap it in a codefence with the `sheet` language tag and start using Obsidian Sheets!:
+Create a normal markdown table and start using Obsidian sheets:
 
 ````md
-```sheet
 | Just                               | a   | normal       | table |
 | ---------------------------------- | --- | ------------ | ----- |
 | Use `<` to merge cells to the left | <   | Merged cell! | <     |
 | Use `^` to merge cells up          | <   | ^            | ^     |
 | ^                                  | ^   | ^            | ^     |
-```
 ````
 ![rendered merge functionality](./assets/renderedMerge.png)
 
 ````md
-```sheet
 | I       | -   | also | have | vertical | headers |
 | ------- | --- | ---- | ---- | -------- | ------- |
 | group 1 | -   | foo  | bar  | baz      | test    |
 | group 2 | -   | 1    | 2    | 3        | 4       |
-```
+
 ````
 ![rendered vertical headers](./assets/renderedVerticalHeaders.png)
 
+Use the `sheet` language tag and start using Obsidian Sheets with custom css!
 ````md
 ```sheet
 {
@@ -51,9 +49,12 @@ Create a normal markdown table and wrap it in a codefence with the `sheet` langu
 
 ```
 ````
+![custom css](./assets/customCss.png)
+
+And it works with advanced tables!
 
 # Future functionality
 - [x] Merging
 - [x] Vertical headers
 - [x] Cell custom styling
-- [ ] Automatic `advanced-table`-like formatting 
+- [x] Automatic `advanced-table`-like formatting 
