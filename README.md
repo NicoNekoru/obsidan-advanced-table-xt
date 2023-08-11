@@ -19,7 +19,7 @@ The characters `<` and `^` in a cell will merge it with the cell to the left and
 ````
 ![Cell Merging Functionality](./assets/renderedMergedCells.png)
 
-Vertical Headers are created by making the second column contain only dashes, much like how native horizontal headers are made with the second row containing only dashes.   
+Vertical Headers are created by making a column contain only dashes, much like how native horizontal headers are made with a row containing only dashes.   
 ````md
 | I        | -   | have | horizontal | headers |
 | -------- | --- | ---- | ---------- | ------- |
