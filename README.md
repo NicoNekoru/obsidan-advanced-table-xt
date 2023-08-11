@@ -1,59 +1,62 @@
 # Obsidian Sheets
 
 This is a plugin for [Obsidian](https://obsidian.md) that brings greater functionality and usage of markdown tables.
-
 # Features
-- Merging
-- Vertical table headings
+- Cell Merging
+- Vertical Table Headings
+- Custom css cell styles
+- Advanced Tables compatibility
+# How to Use
 
-# How to use
+Create a normal markdown table and start using Obsidian Sheets features:
 
-Create a normal markdown table and start using Obsidian sheets:
-
+The characters `<` and `^` in a cell will merge it with the cell to the left and above. Merged cells stack with each other, as seen below.
 ````md
 | Just                               | a   | normal       | table |
 | ---------------------------------- | --- | ------------ | ----- |
 | Use `<` to merge cells to the left | <   | Merged cell! | <     |
 | Use `^` to merge cells up          | <   | ^            | ^     |
 ````
-![rendered merge functionality](./assets/renderedMerge.png)
+![Cell Merging Functionality](./assets/renderedMergedCells.png)
 
+Vertical Headers are created by making the second column contain only dashes, much like how native horizontal headers are made with the second row containing only dashes.   
 ````md
-| I       | -   | also | have | vertical | headers |
-| ------- | --- | ---- | ---- | -------- | ------- |
-| group 1 | -   | foo  | bar  | baz      | test    |
-| group 2 | -   | 1    | 2    | 3        | 4       |
+| I        | -   | have | horizontal | headers |
+| -------- | --- | ---- | ---------- | ------- |
+| also     | -   | foo  | bar        | <       |
+| have     | -   | 1    | 2          | 3       |
+| vertical | -   | A    | B          | C       |
+| headers! | -   | X    | Y          | Z       |
 
 ````
-![rendered vertical headers](./assets/renderedVerticalHeaders.png)
+![Vertical Headers](./assets/renderedVerticalHeaders.png)
 
-Use the `sheet` language tag and start using Obsidian Sheets with custom css!
+Use the `sheet` language tag and start using Obsidian Sheets with custom CSS! Partition off the class names, prefixed with a `.` using a `~` as seen below and use CSS with said class names in metadata above the table.
 ````md
 ```sheet
 {
 	classes: { 
 		class1: { 
-			"color": "blue",
+			"color": "cyan",
 		},
         class2: {
-			backgroundColor: "#fff",
+			backgroundColor: "#555",
         }
 	},
 }
 ---
-| I                 | -   | have | meta                  | data        | !!!  |
+| I                 | -   | have | meta                  | data        | too! |
 | ----------------- | --- | ---- | --------------------- | ----------- | ---- |
 | group 1           | -   | foo  | bar ~ .class1 .class2 | baz         | test |
 | group 2 ~ .class1 | -   | 1    | ^                     | 3 ~ .class2 | 4    |
 
 ```
 ````
-![custom css](./assets/customCss.png)
+![Custom CSS](./assets/renderedCustomCSS.png)
 
-And it works with [advanced tables](https://github.com/tgrosinger/advanced-tables-obsidian/)!
-
-# Future functionality
-- [x] Merging
-- [x] Vertical headers
-- [x] Cell custom styling
-- [x] Automatic `advanced-table`-like formatting 
+And it works with Advanced Tables!
+# Future Functionality
+- [x] Merging Cells
+- [x] Vertical Headers
+- [x] Custom Cell Styles
+- [x] Automatic `advanced-table`-like Formatting 
