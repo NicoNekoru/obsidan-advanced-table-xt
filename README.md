@@ -35,14 +35,14 @@ Use the `sheet` language tag and start using Obsidian Sheets with custom CSS! Pa
 ````md
 ```sheet
 {
-	classes: { 
-		class1: { 
-			"color": "cyan",
-		},
+    classes: { 
+        class1: { 
+            "color": "cyan",
+        },
         class2: {
-			backgroundColor: "#555",
+            backgroundColor: "#555",
         }
-	},
+    },
 }
 ---
 | I                 | -   | have | meta                  | data        | too! |
@@ -60,3 +60,4 @@ And it works with Advanced Tables!
 - [x] Vertical Headers
 - [x] Custom Cell Styles
 - [x] Automatic `advanced-table`-like Formatting 
+  - [ ] Custom css for `advanced-table`
