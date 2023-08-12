@@ -70,7 +70,7 @@ export class SheetElement extends MarkdownRenderChild
 
 		// Start building DOM element
 		this.table = this.el.createEl('table');
-		this.table.id = '';
+		this.table.id = 'obsidian-sheets-parsed';
 		this.tableHead = this.table.createEl('thead');
 		this.tableBody = this.table.createEl('tbody');
 
