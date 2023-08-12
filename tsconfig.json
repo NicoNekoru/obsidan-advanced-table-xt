@@ -15,5 +15,5 @@
 		"lib": ["DOM", "ES5", "ES6", "ES7"],
 		"jsx": "react"
 	},
-	"include": ["**/*.ts", "src/main.tsx"]
+	"include": ["**/*.ts", "src/main.ts"]
 }
