@@ -72,13 +72,14 @@ Apply custom css to full rows and headers by applying custom classes to the row 
 
 ---
 
-| I           | ----   | have     | meta                  | data        | too! |
-| ----------- | ----   | -: ~ .c2 | --------------------- | ----------- | ---- |
-| group 1     | ----   | foo      | bar ~ .c1 .c2         | baz         | test |
-| group 2     | - ~.c1 | 1        | ^                     | 3 ~ .c2     | 4    |
+| I           | ----   | have     | meta       | data  | too! |
+| ----------- | ----   | -: ~ .c2 | ---------- | ----- | ---- |
+| group 1     | - ~.c1 | foo      | bar        | baz   | test |
+| group 2     | ------ | 1        | ^          | 3     | 4    |
 
 ```
 ````
+![Header Custom CSS](./assets/renderedHeaderCustomCSS.png)
 
 # Future Functionality
 - [x] Merging Cells
