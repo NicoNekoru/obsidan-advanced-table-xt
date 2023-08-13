@@ -31,6 +31,8 @@ Vertical Headers are created by making a column contain only dashes, much like h
 ````
 ![Vertical Headers](./assets/renderedVerticalHeaders.png)
 
+And it works with Advanced Tables!
+
 Use the `sheet` language tag and start using Obsidian Sheets with custom CSS! Partition off the class names, prefixed with a `.` using a `~` as seen below and use CSS with said class names in metadata above the table.
 ````md
 ```sheet
@@ -54,10 +56,34 @@ Use the `sheet` language tag and start using Obsidian Sheets with custom CSS! Pa
 ````
 ![Custom CSS](./assets/renderedCustomCSS.png)
 
-And it works with Advanced Tables!
+Apply custom css to full rows and headers by applying custom classes to the row and column headers. Markdown table alignment with `:` is also allowed.
+````md
+```sheet
+{
+    classes: {
+        c1: {
+            "color": "cyan",
+        },
+        c2: {
+            backgroundColor: "#555",
+        }
+    },
+}
+
+---
+
+| I           | ----   | have     | meta                  | data        | too! |
+| ----------- | ----   | -: ~ .c2 | --------------------- | ----------- | ---- |
+| group 1     | ----   | foo      | bar ~ .c1 .c2         | baz         | test |
+| group 2     | - ~.c1 | 1        | ^                     | 3 ~ .c2     | 4    |
+
+```
+````
+
 # Future Functionality
 - [x] Merging Cells
 - [x] Vertical Headers
 - [x] Custom Cell Styles
+  - [x] Custom row and column styles
 - [x] Automatic `advanced-table`-like Formatting 
   - [ ] Custom css for `advanced-table`
