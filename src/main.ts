@@ -53,7 +53,7 @@ export class ObsidianSpreadsheet extends Plugin
 			if (!el.querySelector('table')) return;
 			if (el.querySelector('table')?.id === 'obsidian-sheets-parsed') return;
 
-			const source = htmlToMarkdown(el);			
+			const source = htmlToMarkdown(el);
 			if (!source) return;
 			
 			el.empty();

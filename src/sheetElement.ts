@@ -28,7 +28,7 @@ export class SheetElement extends MarkdownRenderChild
 	private headerRE: RegExp;
 	private contentGrid: string[][];
 	private metadata: Partial<ISheetMetaData>;
-	private styles: Properties;
+	private styles: Record<string, Properties>;
 	private cellMaxLength = 0;
 	private rowMaxLength = 0;
 	private headerRow: number;
@@ -93,7 +93,7 @@ export class SheetElement extends MarkdownRenderChild
 		this.metaRE = new RegExp(String.raw`^${META_DELIMETER}\s*?$\n*`, 'm');
 		this.newLineRE = new RegExp(String.raw`\n`);
 		this.cellBorderRE = new RegExp(String.raw`(?<!\\)\|`);
-		this.headerRE = new RegExp(String.raw`^\s*?(:)?${HEADER_DELIMETER}+?(:)?\s*?$`);
+		this.headerRE = new RegExp(String.raw`^\s*?(:)?(?:${HEADER_DELIMETER})+?(:)?\s*?(?:(?<!\\)~(.*?))?$`);
 	}
 
 	displayError(error?: string) 
@@ -194,34 +194,54 @@ export class SheetElement extends MarkdownRenderChild
 	getHeaderStyles()
 	{
 		// TODO: Add same syntax of custom styling as cells
-		this.colStyles = this.contentGrid[this.headerRow].map(rowHead => 
+		if (this.headerRow !== -1) this.colStyles = this.contentGrid[this.headerRow].map(rowHead => 
 		{
-			const styles: Properties = {};
+			let styles: Properties = {};
 
 			const alignment = rowHead.match(this.headerRE);
-			if (!alignment) null;
+			if (!alignment) return styles;
 			else if (alignment[1] && alignment[2]) styles['textAlign'] = 'center';
 			else if (alignment[1]) styles['textAlign'] = 'left';
 			else if (alignment[2]) styles['textAlign'] = 'right';
 
 			// Parse ~
+			if (alignment[3])
+				(alignment[3].match(/\.\S+/g) || []).forEach(cssClass => 
+					styles = 
+						{ 
+							...styles, 
+							...(this.styles?.[cssClass.slice(1)] 
+								|| {}
+							) 
+						}
+				);
 
 			return styles;
 		});
 
-		this.rowStyles = this.contentGrid[0].map((_, i) => 
+		if (this.headerCol !== -1) this.rowStyles = this.contentGrid[0].map((_, i) => 
 			this.contentGrid.map(row => row[i])
 		)[this.headerCol].map(rowHead => 
 		{
-			const styles: Properties = {};
+			let styles: Properties = {};
 
 			const alignment = rowHead.match(this.headerRE);
-			if (!alignment) null;
+			if (!alignment) return styles;
 			else if (alignment[1] && alignment[2]) styles['textAlign'] = 'center';
 			else if (alignment[1]) styles['textAlign'] = 'left';
 			else if (alignment[2]) styles['textAlign'] = 'right';
 
 			// Parse ~
+			if (alignment[3])
+				(alignment[3].match(/\.\S+/g) || []).forEach(cssClass => 
+					styles = 
+						{ 
+							...styles, 
+							...(this.styles?.[cssClass.slice(1)] 
+								|| {}
+							) 
+						}
+				);
 
 			return styles;
 		});
@@ -271,7 +291,7 @@ export class SheetElement extends MarkdownRenderChild
 			cls = cellStyles.match(/\.\S+/g) || [];
 			cls.forEach(cssClass => 
 			{
-				cellStyle = { ...cellStyle, ...(this.styles?.[cssClass.slice(1) as keyof typeof this.styles] as object || {}) };
+				cellStyle = { ...cellStyle, ...(this.styles?.[cssClass.slice(1)] || {}) };
 			});
 		}
 
