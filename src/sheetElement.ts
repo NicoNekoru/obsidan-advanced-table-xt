@@ -93,7 +93,7 @@ export class SheetElement extends MarkdownRenderChild
 		this.metaRE = new RegExp(String.raw`^${META_DELIMETER}\s*?$\n*`, 'm');
 		this.newLineRE = new RegExp(String.raw`\n`);
 		this.cellBorderRE = new RegExp(String.raw`(?<!\\)\|`);
-		this.headerRE = new RegExp(String.raw`^\s*?(:)?[${HEADER_DELIMETER}\s]+?(:)?\s*?$`);
+		this.headerRE = new RegExp(String.raw`^\s*?(:)?${HEADER_DELIMETER}+?(:)?\s*?$`);
 	}
 
 	displayError(error?: string) 
@@ -204,6 +204,8 @@ export class SheetElement extends MarkdownRenderChild
 			else if (alignment[1]) styles['textAlign'] = 'left';
 			else if (alignment[2]) styles['textAlign'] = 'right';
 
+			// Parse ~
+
 			return styles;
 		});
 
@@ -218,6 +220,8 @@ export class SheetElement extends MarkdownRenderChild
 			else if (alignment[1] && alignment[2]) styles['textAlign'] = 'center';
 			else if (alignment[1]) styles['textAlign'] = 'left';
 			else if (alignment[2]) styles['textAlign'] = 'right';
+
+			// Parse ~
 
 			return styles;
 		});
