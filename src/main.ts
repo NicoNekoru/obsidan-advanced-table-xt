@@ -1,3 +1,4 @@
+import { MetaParser } from 'metaParser';
 import { MarkdownPostProcessorContext, Plugin, MarkdownPreviewRenderer, htmlToMarkdown } from 'obsidian';
 // import { SheetSettingsTab } from './settings';
 import { SheetElement } from './sheetElement';
@@ -31,11 +32,25 @@ export class ObsidianSpreadsheet extends Plugin
 			}
 		);
 
+		this.registerMarkdownCodeBlockProcessor(
+			'sheet_meta',
+			async (
+				source: string,
+				el,
+				ctx
+			) => 
+			{
+				ctx.addChild(new MetaParser(el, source, ctx, this.app, this));
+			}
+		);
 
 		MarkdownPreviewRenderer.registerPostProcessor(async (el, ctx) => 
 		{
+			// if (el.querySelector('#sheet-metadata'))
+			// {
+			// 	console.log(el.doc);
+			// }
 			if (!el.querySelector('table')) return;
-
 			if (el.querySelector('table')?.id === 'obsidian-sheets-parsed') return;
 
 			const source = htmlToMarkdown(el);			

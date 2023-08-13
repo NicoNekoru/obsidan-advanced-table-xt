@@ -3,7 +3,6 @@ import {
 	App,
 	MarkdownPostProcessorContext,
 	MarkdownRenderChild,
-	// MarkdownView,
 	MarkdownRenderer,
 } from 'obsidian';
 import type { Properties } from 'csstype';
@@ -15,7 +14,7 @@ const MERGE_UP_SIGNIFIER = '^',
 	HEADER_DELIMETER = '-',
 	META_DELIMETER = '---';
 
-interface ISheetMetaData
+export interface ISheetMetaData
 {
 	classes: { [key: string]: Properties };
 	log: boolean;
@@ -34,6 +33,8 @@ export class SheetElement extends MarkdownRenderChild
 	private rowMaxLength = 0;
 	private headerRow: number;
 	private headerCol: number;
+	private rowStyles: Properties[] = [];
+	private colStyles: Properties[] = [];
 	private table: HTMLTableElement;
 	private tableHead: HTMLTableSectionElement;
 	private tableBody: HTMLTableSectionElement;
@@ -77,59 +78,22 @@ export class SheetElement extends MarkdownRenderChild
 		// Find header boundaries
 		this.getHeaderBoundaries();
 
+		// Find header styles
+		this.getHeaderStyles();
+
 		// Build cells into DOM
 		this.buildDomTable();
 	}
 
 	onunload() 
-	{
-		// TODO: format user code block on unload -> scrap all of this
-		/*
-		console.log('unloading');
-		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-		const queryProps = this.ctx.getSectionInfo(this.el);
-
-		if (this.source.at(0) !== '|' || this.source.at(-1) !== '|') return;
-		if (!queryProps) return;
-		if (!view) return;
-
-		console.log({
-			contentGrid: this.contentGrid,
-			start: queryProps.lineStart,
-		});
-
-		for (let index = 0; index < this.contentGrid.length; index++) 
-		{
-			const line = this.contentGrid[index];
-			console.log(
-				1 + index + queryProps.lineStart,
-				line
-					.map((cell) =>
-						(' ' + cell.trim()).padEnd(this.cellMaxLength)
-					)
-					.join('|')
-			);
-			// try {
-			// 	view.editor.setLine(
-			// 		1 + index + queryProps.lineStart,
-			// 		line
-			// 			.map((cell) => (' ' + cell.trim()).padEnd(this.cellMaxLength))
-			// 			.join('|')
-			// 	);
-			// }
-			// catch (e) {
-			// 	return this.displayError(e)
-			// }
-		}
-		*/
-	}
+	{}
 
 	initRegex()
 	{
 		this.metaRE = new RegExp(String.raw`^${META_DELIMETER}\s*?$\n*`, 'm');
 		this.newLineRE = new RegExp(String.raw`\n`);
 		this.cellBorderRE = new RegExp(String.raw`(?<!\\)\|`);
-		this.headerRE = new RegExp(String.raw`^[${HEADER_DELIMETER}\s]+?$`);
+		this.headerRE = new RegExp(String.raw`^\s*?(:)?[${HEADER_DELIMETER}\s]+?(:)?\s*?$`);
 	}
 
 	displayError(error?: string) 
@@ -227,6 +191,38 @@ export class SheetElement extends MarkdownRenderChild
 			);
 	}
 
+	getHeaderStyles()
+	{
+		// TODO: Add same syntax of custom styling as cells
+		this.colStyles = this.contentGrid[this.headerRow].map(rowHead => 
+		{
+			const styles: Properties = {};
+
+			const alignment = rowHead.match(this.headerRE);
+			if (!alignment) null;
+			else if (alignment[1] && alignment[2]) styles['textAlign'] = 'center';
+			else if (alignment[1]) styles['textAlign'] = 'left';
+			else if (alignment[2]) styles['textAlign'] = 'right';
+
+			return styles;
+		});
+
+		this.rowStyles = this.contentGrid[0].map((_, i) => 
+			this.contentGrid.map(row => row[i])
+		)[this.headerCol].map(rowHead => 
+		{
+			const styles: Properties = {};
+
+			const alignment = rowHead.match(this.headerRE);
+			if (!alignment) null;
+			else if (alignment[1] && alignment[2]) styles['textAlign'] = 'center';
+			else if (alignment[1]) styles['textAlign'] = 'left';
+			else if (alignment[2]) styles['textAlign'] = 'right';
+
+			return styles;
+		});
+	}
+
 	buildDomTable()
 	{
 		for (
@@ -262,6 +258,9 @@ export class SheetElement extends MarkdownRenderChild
 
 		let cls: string[] = [];
 		let cellStyle: Properties = {};
+
+		if (this.rowStyles[rowIndex]) cellStyle = { ...cellStyle, ...this.rowStyles[rowIndex] };
+		if (this.colStyles[columnIndex]) cellStyle = { ...cellStyle, ...this.colStyles[columnIndex] };
 
 		if (cellStyles) 
 		{
