@@ -1,5 +1,5 @@
 import { MetaParser } from 'metaParser';
-import { MarkdownPostProcessorContext, Plugin, MarkdownPreviewRenderer, htmlToMarkdown } from 'obsidian';
+import { MarkdownPostProcessorContext, Plugin, htmlToMarkdown } from 'obsidian';
 // import { SheetSettingsTab } from './settings';
 import { SheetElement } from './sheetElement';
 // Remember to rename these classes and interfaces!
@@ -8,7 +8,7 @@ export class ObsidianSpreadsheet extends Plugin
 {
 	async onload() 
 	{
-		console.log('loading spreadsheet plugin');
+		// console.log('loading spreadsheet plugin');
 		this.registerMarkdownCodeBlockProcessor(
 			'sheet',
 			async (
@@ -44,7 +44,7 @@ export class ObsidianSpreadsheet extends Plugin
 			}
 		);
 
-		MarkdownPreviewRenderer.registerPostProcessor(async (el, ctx) => 
+		this.registerMarkdownPostProcessor(async (el, ctx) => 
 		{
 			// if (el.querySelector('#sheet-metadata'))
 			// {
@@ -66,7 +66,7 @@ export class ObsidianSpreadsheet extends Plugin
 
 	onunload() 
 	{
-		console.log('unloading spreadsheet plugin');
+		// console.log('unloading spreadsheet plugin');
 	}
 
 }

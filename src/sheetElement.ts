@@ -55,9 +55,6 @@ export class SheetElement extends MarkdownRenderChild
 
 	onload() 
 	{
-		// TODO: refactor into never nesting
-		console.log('spreadsheets loaded');
-
 		this.initRegex();
 
 		// Parse code block input
