@@ -106,6 +106,7 @@ export class SheetElement extends MarkdownRenderChild
 	{
 		if (!this.metaRE.test(this.source)) return this.contentGrid = 
 			this.source.split(this.newLineRE)
+				.filter((row) => this.cellBorderRE.test(row))
 				.map((row) => row.split(this.cellBorderRE)
 					.map(cell => cell.trim()));
 		

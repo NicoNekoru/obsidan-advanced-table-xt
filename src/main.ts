@@ -46,18 +46,18 @@ export class ObsidianSpreadsheet extends Plugin
 
 		this.registerMarkdownPostProcessor(async (el, ctx) => 
 		{
-			// if (el.querySelector('#sheet-metadata'))
-			// {
-			// 	console.log(el.doc);
-			// }
-			if (!el.querySelector('table')) return;
-			if (el.querySelector('table')?.id === 'obsidian-sheets-parsed') return;
-
-			const source = htmlToMarkdown(el);
-			if (!source) return;
-			
-			el.empty();
-			ctx.addChild(new SheetElement(el, source.trim(), ctx, this.app, this));
+			const tableEls = el.querySelectorAll('table');
+			for (const tableEl of Array.from(tableEls))
+			{
+				if (!tableEl) return;
+				if (tableEl?.id === 'obsidian-sheets-parsed') return;
+	
+				const source = htmlToMarkdown(tableEl);
+				if (!source) return;
+							
+				tableEl.empty();
+				ctx.addChild(new SheetElement(tableEl, source.trim(), ctx, this.app, this));
+			}
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
