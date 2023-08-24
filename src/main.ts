@@ -55,7 +55,7 @@ export class ObsidianSpreadsheet extends Plugin
 				tableEl.querySelectorAll(':scope a.internal-link').forEach((link: HTMLAnchorElement) => 
 				{ 
 					const parsedLink = document.createElement('span');
-					parsedLink.innerText = `[[${link.getAttr('href')}|${link.innerText.replace('|', '\\|')}]]`;
+					parsedLink.innerText = `[[${link.getAttr('href')}|${link.innerText}]]`;
 					link.replaceWith(parsedLink);
 				});
 	
