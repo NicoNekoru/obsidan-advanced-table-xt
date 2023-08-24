@@ -51,6 +51,13 @@ export class ObsidianSpreadsheet extends Plugin
 			{
 				if (!tableEl) return;
 				if (tableEl?.id === 'obsidian-sheets-parsed') return;
+
+				tableEl.querySelectorAll(':scope a.internal-link').forEach((link: HTMLAnchorElement) => 
+				{ 
+					const parsedLink = document.createElement('span');
+					parsedLink.innerText = `[[${link.getAttr('href')}|${link.innerText}]]`;
+					link.replaceWith(parsedLink);
+				});
 	
 				const source = htmlToMarkdown(tableEl);
 				if (!source) return;
