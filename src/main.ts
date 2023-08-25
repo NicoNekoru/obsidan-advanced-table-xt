@@ -52,6 +52,12 @@ export class ObsidianSpreadsheet extends Plugin
 				if (!tableEl) return;
 				if (tableEl?.id === 'obsidian-sheets-parsed') return;
 
+				tableEl.querySelectorAll(':scope td').forEach(({ childNodes }) => childNodes.forEach(node => 
+				{
+					if (node.nodeType == 3) // Text node type
+						node.textContent = node.textContent?.replace(/[*_=~`[\]$()]/g, '\\$&') || '';
+						// See https://help.obsidian.md/Editing+and+formatting/Basic+formatting+syntax#Styling+text
+				}));
 				tableEl.querySelectorAll(':scope a.internal-link').forEach((link: HTMLAnchorElement) => 
 				{ 
 					const parsedLink = document.createElement('span');
