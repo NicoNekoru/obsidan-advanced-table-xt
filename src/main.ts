@@ -64,6 +64,9 @@ export class ObsidianSpreadsheet extends Plugin
 					parsedLink.innerText = `[[${link.getAttr('href')}|${link.innerText}]]`;
 					link.replaceWith(parsedLink);
 				});
+				tableEl.querySelectorAll(':scope span.math').forEach((link: HTMLSpanElement) =>
+					link.textContent?.trim().length ? link.textContent = `$${link.textContent || ''}$` : null
+				);
 	
 				const source = htmlToMarkdown(tableEl);
 				if (!source) return;

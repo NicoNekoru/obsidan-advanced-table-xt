@@ -276,7 +276,7 @@ export class SheetElement extends MarkdownRenderChild
 		const [
 			cellContent, 
 			cellStyles
-		] = this.contentGrid[rowIndex][columnIndex].split(/(?<!\\)~/);
+		] = this.contentGrid[rowIndex][columnIndex].split(/(?<![\\~])~(?!~)/);
 
 		let cls: string[] = [];
 		let cellStyle: Properties = {};
@@ -320,7 +320,7 @@ export class SheetElement extends MarkdownRenderChild
 				cell,
 				'',
 				this
-			).then(() => cell.children[0].innerHTML = cell.children[0].innerHTML?.replace(/^pad /, '') || '');
+			).then(() => cell.children[0].childNodes[0].textContent = cell.children[0].childNodes[0].textContent?.replace(/^pad /, '') || '');
 			Object.assign(cell.style, cellStyle);
 		}
 

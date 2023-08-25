@@ -88,3 +88,9 @@ Apply custom css to full rows and headers by applying custom classes to the row 
   - [x] Custom row and column styles
 - [x] Automatic `advanced-table`-like Formatting 
   - [ ] Custom css for `advanced-table`
+
+# Support me!
+Using this plugin is completely free, but if you would like to support me or think that I have contributed value to your days you can support me here:
+
+[<img src="https://img.shields.io/badge/NicoNekoru-yellow?style=for-the-badge&logo=paypal" alt="PayPal" height="20">](https://paypal.me/NicoNekoru)
+[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="BuyMeACoffee" height="20">](https://www.buymeacoffee.com/niconekoru)
