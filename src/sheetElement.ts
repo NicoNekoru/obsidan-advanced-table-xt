@@ -316,11 +316,11 @@ export class SheetElement extends MarkdownRenderChild
 			cell = rowNode.createEl(cellTag, { cls });
 			MarkdownRenderer.render(
 				this.app,
-				cellContent,
+				'pad ' + cellContent, // Make sure markdown that requires to be at the start of a line is not rendered
 				cell,
 				'',
 				this
-			);
+			).then(() => cell.children[0].innerHTML = cell.children[0].innerHTML?.replace(/^pad /, '') || '');
 			Object.assign(cell.style, cellStyle);
 		}
 

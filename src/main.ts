@@ -63,7 +63,7 @@ export class ObsidianSpreadsheet extends Plugin
 				if (!source) return;
 							
 				tableEl.empty();
-				ctx.addChild(new SheetElement(tableEl, source.trim(), ctx, this.app, this));
+				ctx.addChild(new SheetElement(tableEl, source.trim().replace(/\\\\/g, '$&$&'), ctx, this.app, this));
 			}
 		});
 
