@@ -81,11 +81,20 @@ Apply custom css to full rows and headers by applying custom classes to the row 
 ````
 ![Header Custom CSS](./assets/renderedHeaderCustomCSS.png)
 
+You can also directly apply custom css to cells instead of defining a class
+```md
+| Custom  | css                             | cells |
+| ------- | ------------------------------- | ----- |
+| group 1 | foo ~ { "text-align": "right" } | <     |
+```
+![Cell Custom CSS](./assets/renderedCellCustomCSS.png)
+
 # Future Functionality
 - [x] Merging Cells
 - [x] Vertical Headers
 - [x] Custom Cell Styles
   - [x] Custom row and column styles
+  - [x] Inline custom styles
 - [x] Automatic `advanced-table`-like Formatting 
   - [ ] Custom css for `advanced-table`
 
