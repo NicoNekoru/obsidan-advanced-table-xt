@@ -55,7 +55,7 @@ export class ObsidianSpreadsheet extends Plugin
 				tableEl.querySelectorAll(':scope td').forEach(({ childNodes }) => childNodes.forEach(node => 
 				{
 					if (node.nodeType == 3) // Text node type
-						node.textContent = node.textContent?.replace(/[*_=~`[\]$()]/g, '\\$&') || '';
+						node.textContent = node.textContent?.replace(/[*_`[\]$()]|[~=]{2}/g, '\\$&') || '';
 						// See https://help.obsidian.md/Editing+and+formatting/Basic+formatting+syntax#Styling+text
 				}));
 				tableEl.querySelectorAll(':scope a.internal-link').forEach((link: HTMLAnchorElement) => 

@@ -291,6 +291,16 @@ export class SheetElement extends MarkdownRenderChild
 			{
 				cellStyle = { ...cellStyle, ...(this.styles?.[cssClass.slice(1)] || {}) };
 			});
+
+			const inlineStyle = cellStyles.match(/\{.*\}/)?.[0] || '';
+			try 
+			{
+				cellStyle = { ...cellStyle, ...JSON5.parse(inlineStyle) };
+			} 
+			catch 
+			{
+				console.error(`Invalid cell style \`${inlineStyle}\``);
+			}
 		}
 
 		let cellTag: keyof HTMLElementTagNameMap = 'td';

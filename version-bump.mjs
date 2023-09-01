@@ -14,7 +14,7 @@ switch (process.argv[2])
 		targetVersion = version.replace(/(\d+)\.(\d+)\.\d+/, (version, major, minor) => `${major}.${Number(minor) + 1}.0`);
 		break;
 	default:
-		targetVersion = version.replace(/(\d+)\.(\d+)\.(\d+)/, (version, major, minor, next) => `${major}.${minor}.${Number(next) + 1}`);
+		targetVersion = version.replace(/(\d+)\.(\d+)\.(\d+)/, (version, major, minor, patch) => `${major}.${minor}.${Number(patch) + 1}`);
 }
 
 manifest.version = targetVersion;
