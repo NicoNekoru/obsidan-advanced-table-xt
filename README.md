@@ -89,6 +89,16 @@ You can also directly apply custom css to cells instead of defining a class
 ```
 ![Cell Custom CSS](./assets/renderedCellCustomCSS.png)
 
+# Installation
+This plugin is [not yet available](https://github.com/obsidianmd/obsidian-releases/pull/2281) on Obsidian community plugins and for now has to be installed manually.
+
+## Manual
+1. Download `main.js`, `styles.css`, and `mainfest.json` from [releases](https://github.com/NicoNekoru/obsidan-advanced-table-xt/releases)
+2. Place the installed files in `<vault>/.obsidian/plugins/sheets`
+3. Reload Obsidian (Open command palette and `Reload without saving`)
+4. Go to `Settings -> Options -> Community Plugins` and disable safe mode
+5. Enable the plugin `Sheets Extended` under `Settings -> Options -> Community Plugins -> Installed plugins`
+
 # Future Functionality
 - [x] Merging Cells
 - [x] Vertical Headers
