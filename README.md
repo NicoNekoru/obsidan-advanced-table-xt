@@ -90,7 +90,10 @@ You can also directly apply custom css to cells instead of defining a class
 ![Cell Custom CSS](./assets/renderedCellCustomCSS.png)
 
 # Installation
-This plugin is [not yet available](https://github.com/obsidianmd/obsidian-releases/pull/2281) on Obsidian community plugins and for now has to be installed manually.
+## From within Obsidian
+This plugin is [now available](https://github.com/obsidianmd/obsidian-releases/pull/2281) on Obsidian community plugins under the name `Sheets Extended`.
+
+Go to `Settings -> Community plugins -> Browse`, search for `Sheets Extended`, click `install` then `enable`.
 
 ## Manual
 1. Download `main.js`, `styles.css`, and `mainfest.json` from [releases](https://github.com/NicoNekoru/obsidan-advanced-table-xt/releases)
