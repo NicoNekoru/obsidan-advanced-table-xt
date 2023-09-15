@@ -2,7 +2,7 @@ import { MetaParser } from 'metaParser';
 import { MarkdownPostProcessorContext, Plugin, htmlToMarkdown } from 'obsidian';
 // import { SheetSettingsTab } from './settings';
 import { SheetElement } from './sheetElement';
-import { Converter } from 'showdown';
+
 // Remember to rename these classes and interfaces!
 
 export class ObsidianSpreadsheet extends Plugin 
@@ -73,7 +73,7 @@ export class ObsidianSpreadsheet extends Plugin
 						link.textContent?.trim().length ? link.textContent = `$${link.textContent || ''}$` : null
 					);
 
-					source = htmlToMarkdown(tableEl);
+					source = htmlToMarkdown(tableEl).trim().replace(/\\\\/g, '$&$&');
 					if (!source) return;
 				}
 				else
@@ -83,7 +83,7 @@ export class ObsidianSpreadsheet extends Plugin
 				}
 							
 				tableEl.empty();
-				ctx.addChild(new SheetElement(tableEl, source.trim().replace(/\\\\/g, '$&$&'), ctx, this.app, this));
+				ctx.addChild(new SheetElement(tableEl, source.trim(), ctx, this.app, this));
 			}
 		});
 

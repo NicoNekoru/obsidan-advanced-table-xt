@@ -78,6 +78,7 @@ export class SheetElement extends MarkdownRenderChild
 		// Find header styles
 		this.getHeaderStyles();
 
+		console.log(this.contentGrid);
 		// Build cells into DOM
 		this.buildDomTable();
 	}
@@ -292,7 +293,7 @@ export class SheetElement extends MarkdownRenderChild
 				cellStyle = { ...cellStyle, ...(this.styles?.[cssClass.slice(1)] || {}) };
 			});
 
-			const inlineStyle = cellStyles.match(/\{.*\}/)?.[0] || '';
+			const inlineStyle = cellStyles.match(/\{.*\}/)?.[0] || '{}';
 			try 
 			{
 				cellStyle = { ...cellStyle, ...JSON5.parse(inlineStyle) };
@@ -324,13 +325,16 @@ export class SheetElement extends MarkdownRenderChild
 		else 
 		{
 			cell = rowNode.createEl(cellTag, { cls });
+			// cell.innerHTML = (new Converter({ backslashEscapesHTMLTags: true, strikethrough: true, })).makeHtml(' ' + cellContent);
+			// console.log((new Converter({ backslashEscapesHTMLTags: true, strikethrough: true, })).makeHtml(' ' + cellContent));
+			
 			MarkdownRenderer.render(
 				this.app,
-				'pad ' + cellContent, // Make sure markdown that requires to be at the start of a line is not rendered
+				'\u200B ' + cellContent, // Make sure markdown that requires to be at the start of a line is not rendered
 				cell,
 				'',
 				this
-			).then(() => cell.children[0].childNodes[0].textContent = cell.children[0].childNodes[0].textContent?.replace(/^pad /, '') || '');
+			).then(() => cell.children[0].childNodes[0].textContent = cell.children[0].childNodes[0].textContent?.replace(/^\\ /, '') || '');
 			Object.assign(cell.style, cellStyle);
 		}
 
