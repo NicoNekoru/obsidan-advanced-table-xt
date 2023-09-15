@@ -2,6 +2,7 @@ import { MetaParser } from 'metaParser';
 import { MarkdownPostProcessorContext, Plugin, htmlToMarkdown } from 'obsidian';
 // import { SheetSettingsTab } from './settings';
 import { SheetElement } from './sheetElement';
+import { Converter } from 'showdown';
 // Remember to rename these classes and interfaces!
 
 export class ObsidianSpreadsheet extends Plugin 
@@ -53,9 +54,33 @@ export class ObsidianSpreadsheet extends Plugin
 				if (tableEl?.id === 'obsidian-sheets-parsed') return;
 	
 				const sec = ctx.getSectionInfo(tableEl);
-				if (!sec) return;
-				const {text, lineStart, lineEnd} = sec;
-				const source = text.split(`\n`).slice(lineStart, 1 + lineEnd).join(`\n`);
+				let source: string = '';
+				if (!sec)
+				{
+					tableEl.querySelectorAll(':scope td').forEach(({ childNodes }) => childNodes.forEach(node => 
+					{
+						if (node.nodeType == 3) // Text node type
+							node.textContent = node.textContent?.replace(/[*_`[\]$()]|[~=]{2}/g, '\\$&') || '';
+							// See https://help.obsidian.md/Editing+and+formatting/Basic+formatting+syntax#Styling+text
+					}));
+					tableEl.querySelectorAll(':scope a.internal-link').forEach((link: HTMLAnchorElement) => 
+					{ 
+						const parsedLink = document.createElement('span');
+						parsedLink.innerText = `[[${link.getAttr('href')}|${link.innerText}]]`;
+						link.replaceWith(parsedLink);
+					});
+					tableEl.querySelectorAll(':scope span.math').forEach((link: HTMLSpanElement) =>
+						link.textContent?.trim().length ? link.textContent = `$${link.textContent || ''}$` : null
+					);
+
+					source = htmlToMarkdown(tableEl);
+					if (!source) return;
+				}
+				else
+				{
+					const {text, lineStart, lineEnd} = sec;
+					source = text.split('\n').slice(lineStart, 1 + lineEnd).join('\n');
+				}
 							
 				tableEl.empty();
 				ctx.addChild(new SheetElement(tableEl, source.trim().replace(/\\\\/g, '$&$&'), ctx, this.app, this));
