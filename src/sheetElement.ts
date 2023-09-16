@@ -78,9 +78,10 @@ export class SheetElement extends MarkdownRenderChild
 		// Find header styles
 		this.getHeaderStyles();
 
-		console.log(this.contentGrid);
 		// Build cells into DOM
 		this.buildDomTable();
+
+		// console.log(this.domGrid);
 	}
 
 	onunload() 
@@ -314,17 +315,19 @@ export class SheetElement extends MarkdownRenderChild
 		{
 			cell = this.domGrid[rowIndex][columnIndex - 1];
 			cell?.colSpan || Object.assign(cell, { colSpan: 1 });
-			cell.colSpan += 1;
+			cell.colSpan = columnIndex - parseInt(cell.getAttribute('col-index') || columnIndex.toString()) + 1;
 		}
 		else if (cellContent == MERGE_UP_SIGNIFIER && this.domGrid[rowIndex - 1][columnIndex]) 
 		{
 			cell = this.domGrid[rowIndex - 1][columnIndex];
 			cell?.rowSpan || Object.assign(cell, { rowSpan: 1 });
-			cell.rowSpan += 1;
+			cell.rowSpan = rowIndex - parseInt(cell.getAttribute('row-index') || '0') + 1;
 		}
 		else 
 		{
 			cell = rowNode.createEl(cellTag, { cls });
+			cell.setAttribute('row-index', rowIndex.toString());
+			cell.setAttribute('col-index', columnIndex.toString());
 			// cell.innerHTML = (new Converter({ backslashEscapesHTMLTags: true, strikethrough: true, })).makeHtml(' ' + cellContent);
 			// console.log((new Converter({ backslashEscapesHTMLTags: true, strikethrough: true, })).makeHtml(' ' + cellContent));
 			
