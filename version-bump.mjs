@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs';
+import { exec } from 'child_process';
 
 let manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
 const { minAppVersion, version } = manifest;
@@ -25,3 +26,4 @@ let versions = JSON.parse(readFileSync('versions.json', 'utf8'));
 versions[targetVersion] = minAppVersion;
 writeFileSync('versions.json', JSON.stringify(versions, null, '\t'));
 
+exec(String.raw`gh release create ${targetVersion} .\main.js .\styles.css .\manifest.json --generate-notes`);
