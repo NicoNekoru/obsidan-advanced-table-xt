@@ -109,7 +109,7 @@ Go to `Settings -> Community plugins -> Browse`, search for `Sheets Extended`, c
   - [x] Custom row and column styles
   - [x] Inline custom styles
 - [x] Automatic `advanced-table`-like Formatting 
-  - [ ] Custom css for `advanced-table`
+  - [x] Custom css for `advanced-table`
 
 # Support me!
 Using this plugin is completely free, but if you would like to support me or think that I have contributed value to your days you can support me here:

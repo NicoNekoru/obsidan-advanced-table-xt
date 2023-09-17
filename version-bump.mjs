@@ -5,6 +5,7 @@ const { minAppVersion, version } = manifest;
 
 let targetVersion;
 
+// eslint-disable-next-line no-undef
 switch (process.argv[2])
 {
 	case '--major':
