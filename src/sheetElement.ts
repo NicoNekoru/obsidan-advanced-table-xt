@@ -341,7 +341,7 @@ export class SheetElement extends MarkdownRenderChild
 				cell,
 				'',
 				this
-			).then(() => cell.children[0].childNodes[0].textContent = cell.children[0].childNodes[0].textContent?.replace(/^\\ /, '') || '');
+			).then(() => cell.children[0].childNodes[0].textContent = cell.children[0].childNodes[0].textContent?.replace(/^\u200B/, '') || '');
 			Object.assign(cell.style, cellStyle);
 		}
 
