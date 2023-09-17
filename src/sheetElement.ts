@@ -308,21 +308,25 @@ export class SheetElement extends MarkdownRenderChild
 		let cellTag: keyof HTMLElementTagNameMap = 'td';
 		let cell: HTMLTableCellElement;
 
-		if (columnIndex === this.headerCol || rowIndex == this.headerRow) return;
+		if (columnIndex === this.headerCol || rowIndex === this.headerRow) return;
 		else if (columnIndex < this.headerCol || rowIndex < this.headerRow) cellTag = 'th';
 
-		if (cellContent == MERGE_LEFT_SIGNIFIER && this.domGrid[rowIndex][columnIndex - 1]) 
+		if (cellContent == MERGE_LEFT_SIGNIFIER && this.domGrid?.[rowIndex]?.[columnIndex - 1]) 
 		{
 			cell = this.domGrid[rowIndex][columnIndex - 1];
 			cell?.colSpan || Object.assign(cell, { colSpan: 1 });
 			cell.colSpan = columnIndex - parseInt(cell.getAttribute('col-index') || columnIndex.toString()) + 1;
 		}
-		else if (cellContent == MERGE_UP_SIGNIFIER && this.domGrid[rowIndex - 1][columnIndex]) 
+		else if (cellContent == MERGE_UP_SIGNIFIER && this.domGrid?.[rowIndex - 1]?.[columnIndex]) 
 		{
 			cell = this.domGrid[rowIndex - 1][columnIndex];
 			cell?.rowSpan || Object.assign(cell, { rowSpan: 1 });
 			cell.rowSpan = rowIndex - parseInt(cell.getAttribute('row-index') || '0') + 1;
 		}
+		else if (
+			this.domGrid?.[rowIndex - 1]?.[columnIndex] && this.domGrid?.[rowIndex]?.[columnIndex - 1] &&
+			this.domGrid[rowIndex][columnIndex - 1] === this.domGrid[rowIndex - 1][columnIndex] 
+		) cell = this.domGrid[rowIndex][columnIndex - 1];
 		else 
 		{
 			cell = rowNode.createEl(cellTag, { cls });

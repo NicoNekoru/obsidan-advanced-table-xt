@@ -52,7 +52,7 @@ export class ObsidianSpreadsheet extends Plugin
 			{
 				if (!tableEl) return;
 				if (tableEl?.id === 'obsidian-sheets-parsed') return;
-	
+
 				const sec = ctx.getSectionInfo(tableEl);
 				let source: string = '';
 				if (!sec)
