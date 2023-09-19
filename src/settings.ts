@@ -1,4 +1,4 @@
-import { PluginSettingTab, Setting, App } from 'obsidian';
+import { PluginSettingTab, Setting, App, MarkdownView } from 'obsidian';
 import { ObsidianSpreadsheet } from './main';
 
 export class SheetSettingsTab extends PluginSettingTab 
@@ -18,17 +18,22 @@ export class SheetSettingsTab extends PluginSettingTab
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText((text) =>
-				text
-					.setPlaceholder('Enter your secret')
-					.setValue('test'/* this.plugin.settings.mySetting */)
-					// .onChange(async (value) => 
-					// {
-					// 	this.plugin.settings.mySetting = value;
-					// 	await this.plugin.saveSettings();
-					// })
+			.setName('Native table post processing')
+			.setDesc('Enable this setting to use Obsidian Sheets\' renderer ')
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.nativeProcessing)
+					.onChange(async value => 
+					{
+						console.log(value);
+						this.plugin.settings.nativeProcessing = value;
+						await this.plugin.saveSettings();
+						// @ts-expect-error workspace.activeLeaf is deprecated and the following 
+						// line is prefered but the following line does not actually work on my 
+						// machine so deprecated it is I guess
+						this.app.workspace.activeLeaf?.rebuildView();
+						this.app.workspace.getActiveViewOfType(MarkdownView)?.previewMode.rerender(true);
+					})
 			);
 	}
 }

@@ -81,6 +81,31 @@ Apply custom css to full rows and headers by applying custom classes to the row 
 ````
 ![Header Custom CSS](./assets/renderedHeaderCustomCSS.png)
 
+Apply custom styles to the entire table by using the custom styles/classes syntax on the metadata!
+````md
+```sheet
+
+{
+    classes: {
+        c1: {
+            "color": "cyan",
+        },
+        c2: {
+            backgroundColor: "#555",
+        }
+    },
+}
+
+--- ~ { color: 'red' }
+
+| I           | ----   | have     | meta                  | data        | too! |
+| ------------| ------ | -: ~ .c2 | --------------------- | ----------- | ---- |
+| group 1     | ----   | ~~foo~~  | bar ~ .c1 .c2         | $baz$       | test |
+| group 2     | - ~.c1 | 1\. test | ^                     | 3 ~ .c2     | 4    |
+```
+````
+![Table Custom CSS](./assets/renderedTableCustomCSS.png)
+
 You can also directly apply custom css to cells instead of defining a class
 ```md
 | Custom  | css                             | cells |

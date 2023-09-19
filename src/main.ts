@@ -1,14 +1,23 @@
 import { MetaParser } from 'metaParser';
 import { MarkdownPostProcessorContext, Plugin, htmlToMarkdown } from 'obsidian';
-// import { SheetSettingsTab } from './settings';
+import { SheetSettingsTab } from './settings';
 import { SheetElement } from './sheetElement';
 
-// Remember to rename these classes and interfaces!
+interface PluginSettings {
+	nativeProcessing: boolean;
+}
+
+const DEFAULT_SETTINGS: PluginSettings = {
+	nativeProcessing: true,
+};
 
 export class ObsidianSpreadsheet extends Plugin 
 {
+	settings: PluginSettings;
+
 	async onload() 
 	{
+		this.loadSettings();
 		// console.log('loading spreadsheet plugin');
 		this.registerMarkdownCodeBlockProcessor(
 			'sheet',
@@ -47,6 +56,9 @@ export class ObsidianSpreadsheet extends Plugin
 
 		this.registerMarkdownPostProcessor(async (el, ctx) => 
 		{
+			console.log(this.settings.nativeProcessing);
+			if (!this.settings.nativeProcessing) return;
+
 			const tableEls = el.querySelectorAll('table');
 			for (const tableEl of Array.from(tableEls))
 			{
@@ -88,7 +100,7 @@ export class ObsidianSpreadsheet extends Plugin
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		// this.addSettingTab(new SheetSettingsTab(this.app, this));
+		this.addSettingTab(new SheetSettingsTab(this.app, this));
 	}
 
 	onunload() 
@@ -96,6 +108,15 @@ export class ObsidianSpreadsheet extends Plugin
 		// console.log('unloading spreadsheet plugin');
 	}
 
+	async loadSettings() 
+	{
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+	}
+
+	async saveSettings() 
+	{
+		await this.saveData(this.settings);
+	}
 }
 
 export default ObsidianSpreadsheet;

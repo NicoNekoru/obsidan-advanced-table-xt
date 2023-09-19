@@ -29,6 +29,7 @@ export class SheetElement extends MarkdownRenderChild
 	private contentGrid: string[][];
 	private metadata: Partial<ISheetMetaData>;
 	private styles: Record<string, Properties>;
+	private globalStyle: Properties = {};
 	private cellMaxLength = 0;
 	private rowMaxLength = 0;
 	private headerRow: number;
@@ -89,7 +90,7 @@ export class SheetElement extends MarkdownRenderChild
 
 	initRegex()
 	{
-		this.metaRE = new RegExp(String.raw`^${META_DELIMETER}\s*?$\n*`, 'm');
+		this.metaRE = new RegExp(String.raw`^${META_DELIMETER}\s*?(?:~(.*?))?\s*?\n+`, 'mg');
 		this.newLineRE = new RegExp(String.raw`\n`);
 		this.cellBorderRE = new RegExp(String.raw`(?<!\\)\|`);
 		this.headerRE = new RegExp(String.raw`^\s*?(:)?(?:${HEADER_DELIMETER})+?(:)?\s*?(?:(?<!\\)~(.*?))?$`);
@@ -112,13 +113,35 @@ export class SheetElement extends MarkdownRenderChild
 				.map((row) => row.split(this.cellBorderRE)
 					.map(cell => cell.trim()));
 		
-		const [meta, source] = this.source.split(this.metaRE);
+		const [meta, unparsedStyle, source] = this.source.split(this.metaRE);
+		
+		this.parseMetadata(meta);
+		
+		if (unparsedStyle)
+		{
+			let cellStyle: Properties = {};
+			const cls = unparsedStyle.match(/\.\S+/g) || [];
+			cls.forEach(cssClass => 
+			{
+				cellStyle = { ...cellStyle, ...(this.styles?.[cssClass.slice(1)] || {}) };
+			});
 
-		this.contentGrid = source.split(this.newLineRE)
+			const inlineStyle = unparsedStyle.match(/\{.*\}/)?.[0] || '{}';
+			try 
+			{
+				cellStyle = { ...cellStyle, ...JSON5.parse(inlineStyle) };
+			} 
+			catch 
+			{
+				console.error(`Invalid cell style \`${inlineStyle}\``);
+			}
+
+			this.globalStyle = cellStyle;
+		}
+
+		return this.contentGrid = source.split(this.newLineRE)
 			.map((row) => row.split(this.cellBorderRE)
 				.map(cell => cell.trim()));
-
-		this.parseMetadata(meta);
 	}
 
 	parseMetadata(meta: string)
@@ -281,7 +304,7 @@ export class SheetElement extends MarkdownRenderChild
 		] = this.contentGrid[rowIndex][columnIndex].split(/(?<![\\~])~(?!~)/);
 
 		let cls: string[] = [];
-		let cellStyle: Properties = {};
+		let cellStyle: Properties = this.globalStyle;
 
 		if (this.rowStyles[rowIndex]) cellStyle = { ...cellStyle, ...this.rowStyles[rowIndex] };
 		if (this.colStyles[columnIndex]) cellStyle = { ...cellStyle, ...this.colStyles[columnIndex] };
