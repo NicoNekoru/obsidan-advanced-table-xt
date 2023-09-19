@@ -5,10 +5,12 @@ import { SheetElement } from './sheetElement';
 
 interface PluginSettings {
 	nativeProcessing: boolean;
+	paragraphs: boolean;
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
 	nativeProcessing: true,
+	paragraphs: true,
 };
 
 export class ObsidianSpreadsheet extends Plugin 
@@ -56,7 +58,6 @@ export class ObsidianSpreadsheet extends Plugin
 
 		this.registerMarkdownPostProcessor(async (el, ctx) => 
 		{
-			console.log(this.settings.nativeProcessing);
 			if (!this.settings.nativeProcessing) return;
 
 			const tableEls = el.querySelectorAll('table');

@@ -296,7 +296,7 @@ export class SheetElement extends MarkdownRenderChild
 		) this.buildDomCell(rowIndex, columnIndex, rowNode);
 	}
 
-	buildDomCell(rowIndex: number, columnIndex: number, rowNode: HTMLElement)
+	async buildDomCell(rowIndex: number, columnIndex: number, rowNode: HTMLElement)
 	{
 		const [
 			cellContent, 
@@ -364,7 +364,11 @@ export class SheetElement extends MarkdownRenderChild
 				cell,
 				'',
 				this
-			).then(() => cell.children[0].childNodes[0].textContent = cell.children[0].childNodes[0].textContent?.replace(/^\u200B/, '') || '');
+			).then(() => 
+			{
+				cell.children[0].childNodes[0].textContent = cell.children[0].childNodes[0].textContent?.replace(/^\u200B/, '') || '';
+				if (!this.plugin.settings.paragraphs) cell.innerHTML = cell.children[0].innerHTML;
+			});
 			Object.assign(cell.style, cellStyle);
 		}
 
