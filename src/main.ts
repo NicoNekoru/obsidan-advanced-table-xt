@@ -29,14 +29,10 @@ export class ObsidianSpreadsheet extends Plugin
 				ctx: MarkdownPostProcessorContext
 			) => 
 			{
-				source = (new DOMParser)
-					.parseFromString(source.trim(), 'text/html')
-					.documentElement
-					.textContent || source.trim();
 					
 				ctx.addChild(new SheetElement(
 					el, 
-					source, 
+					source.trim(), 
 					ctx, 
 					this.app, 
 					this

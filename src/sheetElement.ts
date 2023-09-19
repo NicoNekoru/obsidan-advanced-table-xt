@@ -82,7 +82,7 @@ export class SheetElement extends MarkdownRenderChild
 		// Build cells into DOM
 		this.buildDomTable();
 
-		// console.log(this.domGrid);
+		// console.log(thisGrid);
 	}
 
 	onunload() 
