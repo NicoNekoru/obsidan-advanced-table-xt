@@ -55,6 +55,7 @@ export class ObsidianSpreadsheet extends Plugin
 		this.registerMarkdownPostProcessor(async (el, ctx) => 
 		{
 			if (!this.settings.nativeProcessing) return;
+			if (ctx.frontmatter['disable-sheet'] === true) return;
 
 			const tableEls = el.querySelectorAll('table');
 			for (const tableEl of Array.from(tableEls))
