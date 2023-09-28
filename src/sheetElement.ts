@@ -150,7 +150,7 @@ export class SheetElement extends MarkdownRenderChild
 
 		try 
 		{
-			metadata = JSON5.parse(meta);
+			metadata = JSON5.parse(new DOMParser().parseFromString(meta, 'text/html').documentElement.textContent || '');
 		} 
 		catch (error) 
 		{
