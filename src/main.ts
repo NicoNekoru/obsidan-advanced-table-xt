@@ -1,4 +1,4 @@
-import { MetaParser } from 'metaParser';
+// import { MetaParser } from 'metaParser';
 import { MarkdownPostProcessorContext, Plugin, htmlToMarkdown } from 'obsidian';
 import { SheetSettingsTab } from './settings';
 import { SheetElement } from './sheetElement';
@@ -43,17 +43,17 @@ export class ObsidianSpreadsheet extends Plugin
 			}
 		);
 
-		this.registerMarkdownCodeBlockProcessor(
-			'sheet_meta',
-			async (
-				source: string,
-				el,
-				ctx
-			) => 
-			{
-				ctx.addChild(new MetaParser(el, source, ctx, this.app, this));
-			}
-		);
+		// this.registerMarkdownCodeBlockProcessor(
+		// 	'sheet_meta',
+		// 	async (
+		// 		source: string,
+		// 		el,
+		// 		ctx
+		// 	) => 
+		// 	{
+		// 		ctx.addChild(new MetaParser(el, source, ctx, this.app, this));
+		// 	}
+		// );
 
 		this.registerMarkdownPostProcessor(async (el, ctx) => 
 		{
@@ -92,7 +92,9 @@ export class ObsidianSpreadsheet extends Plugin
 				else
 				{
 					const {text, lineStart, lineEnd} = sec;
-					source = text.split('\n').slice(lineStart, 1 + lineEnd).join('\n');
+					const textContent = text.split('\n').slice(lineStart, 1 + lineEnd);
+					textContent[0] = textContent[0].replace(/^[^|]*?(?=\|)/, '');
+					source = textContent.join('\n');
 				}
 							
 				tableEl.empty();
