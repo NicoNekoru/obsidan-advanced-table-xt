@@ -49,6 +49,7 @@ export class SheetElement extends MarkdownRenderChild
 		private readonly plugin: ObsidianSpreadsheet,
 	) 
 	{
+		console.log(source, el);
 		super(el);
 		// TODO: Handle settings here -> move :11-12
 		// console.log(this);
@@ -150,7 +151,7 @@ export class SheetElement extends MarkdownRenderChild
 
 		try 
 		{
-			metadata = JSON5.parse(new DOMParser().parseFromString(meta, 'text/html').documentElement.textContent || '');
+			metadata = JSON5.parse(meta);
 		} 
 		catch (error) 
 		{
