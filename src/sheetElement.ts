@@ -49,7 +49,6 @@ export class SheetElement extends MarkdownRenderChild
 		private readonly plugin: ObsidianSpreadsheet,
 	) 
 	{
-		console.log(source, el);
 		super(el);
 		// TODO: Handle settings here -> move :11-12
 		// console.log(this);
