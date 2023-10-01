@@ -92,8 +92,8 @@ export class ObsidianSpreadsheet extends Plugin
 				else
 				{
 					const {text, lineStart, lineEnd} = sec;
-					const textContent = text.split('\n').slice(lineStart, 1 + lineEnd);
-					textContent[0] = textContent[0].replace(/^[^|]*?(?=\|)/, '');
+					let textContent = text.split('\n').slice(lineStart, 1 + lineEnd);
+					textContent = textContent.map(line => line.replace(/^[^|]*?(?=\|)/, ''));
 					source = textContent.join('\n');
 				}
 							
