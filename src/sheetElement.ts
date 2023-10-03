@@ -54,7 +54,7 @@ export class SheetElement extends MarkdownRenderChild
 		// console.log(this);
 	}
 
-	onload() 
+	async onload() 
 	{
 		this.initRegex();
 
