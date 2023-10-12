@@ -93,7 +93,7 @@ export class ObsidianSpreadsheet extends Plugin
 				{
 					const {text, lineStart, lineEnd} = sec;
 					let textContent = text.split('\n').slice(lineStart, 1 + lineEnd);
-					textContent = textContent.map(line => line.replace(/^[^|]*?(?=\|)/, ''));
+					textContent = textContent.map(line => line.replace(/^.*?(?=\|(?![^[]*]))/, ''));
 					source = textContent.join('\n');
 				}
 							
