@@ -92,9 +92,20 @@ export class ObsidianSpreadsheet extends Plugin
 				else
 				{
 					const {text, lineStart, lineEnd} = sec;
-					let textContent = text.split('\n').slice(lineStart, 1 + lineEnd);
-					if (textContent[0].match(/^`+/)) return;
-					textContent = textContent.map(line => line.replace(/^.*?(?=\|(?![^[]*]))/, ''));
+					let textContent = text
+						.split('\n')
+						.slice(lineStart, 1 + lineEnd)
+						.map(line => line.replace(/^.*?(?=\|(?![^[]*]))/, ''));
+					
+					if (
+						!textContent
+							.filter((row) => /(?<!\\)\|/.test(row))
+							.map((row) => row.split(/(?<!\\)\|/)
+							.map(cell => cell.trim()))
+							.every(
+								(row) => !row.pop()?.trim() && !row.shift()?.trim()
+							)
+					) return; // Need a better way to figure out if not randering a table; use test for validity on actual table function here since if get to here table is valid.
 					source = textContent.join('\n');
 				}
 							
