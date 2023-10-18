@@ -311,7 +311,7 @@ export class SheetElement extends MarkdownRenderChild
 
 		if (cellStyles) 
 		{
-			cls = cellStyles.match(/\.\S+/g) || [];
+			cls = cellStyles.match(/(?<=\.)\S+/g) || [];
 			cls.forEach(cssClass => 
 			{
 				cellStyle = { ...cellStyle, ...(this.styles?.[cssClass.slice(1)] || {}) };
