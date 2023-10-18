@@ -92,7 +92,7 @@ export class ObsidianSpreadsheet extends Plugin
 				else
 				{
 					const {text, lineStart, lineEnd} = sec;
-					let textContent = text
+					const textContent = text
 						.split('\n')
 						.slice(lineStart, 1 + lineEnd)
 						.map(line => line.replace(/^.*?(?=\|(?![^[]*]))/, ''));
@@ -101,7 +101,7 @@ export class ObsidianSpreadsheet extends Plugin
 						!textContent
 							.filter((row) => /(?<!\\)\|/.test(row))
 							.map((row) => row.split(/(?<!\\)\|/)
-							.map(cell => cell.trim()))
+								.map(cell => cell.trim()))
 							.every(
 								(row) => !row.pop()?.trim() && !row.shift()?.trim()
 							)
