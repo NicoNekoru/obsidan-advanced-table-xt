@@ -314,7 +314,7 @@ export class SheetElement extends MarkdownRenderChild
 			cls = cellStyles.match(/(?<=\.)\S+/g) || [];
 			cls.forEach(cssClass => 
 			{
-				cellStyle = { ...cellStyle, ...(this.styles?.[cssClass.slice(1)] || {}) };
+				cellStyle = { ...cellStyle, ...(this.styles?.[cssClass] || {}) };
 			});
 
 			const inlineStyle = cellStyles.match(/\{.*\}/)?.[0] || '{}';
