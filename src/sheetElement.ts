@@ -301,7 +301,7 @@ export class SheetElement extends MarkdownRenderChild
 		const [
 			cellContent, 
 			cellStyles
-		] = this.contentGrid[rowIndex][columnIndex].split(/(?<![\\~])~(?!~)/);
+		] = this.contentGrid[rowIndex][columnIndex].split(/(?<![\\])~(?!~)/);
 
 		let cls: string[] = [];
 		let cellStyle: Properties = this.globalStyle;
