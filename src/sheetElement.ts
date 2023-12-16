@@ -301,7 +301,7 @@ export class SheetElement extends MarkdownRenderChild
 		const [
 			cellContent, 
 			cellStyles
-		] = this.contentGrid[rowIndex][columnIndex].split(/(?<![\\])~(?!~)/);
+		] = this.contentGrid[rowIndex][columnIndex].split(/(?<![\\~])~(?!~)/);
 
 		let cls: string[] = [];
 		let cellStyle: Properties = this.globalStyle;
@@ -360,7 +360,7 @@ export class SheetElement extends MarkdownRenderChild
 			
 			MarkdownRenderer.render(
 				this.app,
-				'\u200B ' + cellContent, // Make sure markdown that requires to be at the start of a line is not rendered
+				'\u200B ' + (cellContent || '\u200B'), // Make sure markdown that requires to be at the start of a line is not rendered
 				cell,
 				'',
 				this
