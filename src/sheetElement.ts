@@ -331,6 +331,9 @@ export class SheetElement extends MarkdownRenderChild {
 			cell.setAttribute('row-index', rowIndex.toString());
 			cell.setAttribute('col-index', columnIndex.toString());
 
+			// RTL support (kinda)
+			cell.setAttribute('dir', 'auto');
+
 			MarkdownRenderer.render(
 				this.app,
 				'\u200B ' + (cellContent || '\u200B'), // Make sure markdown that requires to be at the start of a line is not rendered
@@ -351,3 +354,4 @@ export class SheetElement extends MarkdownRenderChild {
 		return this.domGrid[rowIndex][columnIndex] = cell;
 	}
 }
+
