@@ -1,56 +1,47 @@
 import { PluginSettingTab, Setting, App, MarkdownView } from 'obsidian';
 import { ObsidianSpreadsheet } from './main';
 
-export class SheetSettingsTab extends PluginSettingTab 
-{
+export class SheetSettingsTab extends PluginSettingTab {
 	plugin: ObsidianSpreadsheet;
 
-	constructor(app: App, plugin: ObsidianSpreadsheet) 
-	{
+	constructor(app: App, plugin: ObsidianSpreadsheet) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
-	display(): void 
-	{
+	display(): void {
 		const { containerEl } = this;
 
 		containerEl.empty();
 
 		new Setting(containerEl)
 			.setName('Native table post processing')
-			.setDesc('Enable this setting to use Obsidian Sheets\' renderer ')
+			.setDesc(
+				'Apply Sheets Extended features (cell merging, vertical headers, custom CSS) to ordinary Markdown tables in both reading mode and Live Preview.'
+			)
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.nativeProcessing)
-					.onChange(async value => 
-					{
+					.onChange(async (value) => {
 						this.plugin.settings.nativeProcessing = value;
 						await this.plugin.saveSettings();
-						// @ts-expect-error workspace.activeLeaf is deprecated and the following 
-						// line is prefered but the following line does not actually work on my 
-						// machine so deprecated it is I guess
-						this.app.workspace.activeLeaf?.rebuildView();
-						this.app.workspace.getActiveViewOfType(MarkdownView)?.previewMode.rerender(true);
+						this.refreshViews();
 					})
 			);
+	}
 
-		new Setting(containerEl)
-			.setName('Use paragraphs in cells')
-			.setDesc('Enable this setting to use paragraphs for table cells ')
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.paragraphs)
-					.onChange(async value => 
-					{
-						this.plugin.settings.paragraphs = value;
-						await this.plugin.saveSettings();
-						// @ts-expect-error workspace.activeLeaf is deprecated and the following 
-						// line is prefered but the following line does not actually work on my 
-						// machine so deprecated it is I guess
-						this.app.workspace.activeLeaf?.rebuildView();
-						this.app.workspace.getActiveViewOfType(MarkdownView)?.previewMode.rerender(true);
-					})
-			);
+	/** Re-render open Markdown views so a setting change takes effect immediately. */
+	private refreshViews(): void {
+		// Refresh Live Preview editor extensions and nudge each editor so the
+		// table widgets re-apply (or revert) without needing a manual reload.
+		this.app.workspace.updateOptions();
+		this.app.workspace.getLeavesOfType('markdown').forEach((leaf) => {
+			const view = leaf.view;
+			if (!(view instanceof MarkdownView)) return;
+			view.previewMode?.rerender(true);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const cm = (view.editor as any)?.cm;
+			cm?.dispatch?.({});
+		});
 	}
 }

@@ -207,12 +207,12 @@ export class SheetElement extends MarkdownRenderChild {
 			else if (alignment[1]) styles['textAlign'] = 'left';
 			else if (alignment[2]) styles['textAlign'] = 'right';
 
-			// Parse ~
-			const classes = alignment[3]?.match(/\.\S+/g)?.map(String) || [];
-			classes.forEach(cssClass => 
+			// Parse ~ (class names are stored without the leading dot)
+			const classes = alignment[3]?.match(/(?<=\.)\S+/g)?.map(String) || [];
+			classes.forEach(cssClass =>
 				styles = {
 					...styles,
-					...(this.styles?.[cssClass.slice(1)]
+					...(this.styles?.[cssClass]
 							|| {}
 					)
 				}
@@ -231,12 +231,12 @@ export class SheetElement extends MarkdownRenderChild {
 			else if (alignment[1]) styles['textAlign'] = 'left';
 			else if (alignment[2]) styles['textAlign'] = 'right';
 
-			// Parse ~
-			const classes = alignment[3]?.match(/\.\S+/g)?.map(String) || [];
-			classes.forEach(cssClass => 
+			// Parse ~ (class names are stored without the leading dot)
+			const classes = alignment[3]?.match(/(?<=\.)\S+/g)?.map(String) || [];
+			classes.forEach(cssClass =>
 				styles = {
 					...styles,
-					...(this.styles?.[cssClass.slice(1)]
+					...(this.styles?.[cssClass]
 							|| {}
 					)
 				}

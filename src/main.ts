@@ -1,24 +1,31 @@
-// import { MetaParser } from 'metaParser';
-import { MarkdownPostProcessorContext, Plugin, htmlToMarkdown } from 'obsidian';
+import {
+	MarkdownPostProcessorContext,
+	Plugin,
+	htmlToMarkdown,
+} from 'obsidian';
 import { SheetSettingsTab } from './settings';
 import { SheetElement } from './sheetElement';
-import * as JSON5 from 'json5';
+import { augmentGrid, type GridCell } from './tableAugmenter';
+import { findDelimiterRow, splitTableSource } from './tableModel';
+import { sheetsLivePreviewExtension } from './livePreview';
 
 interface PluginSettings {
 	nativeProcessing: boolean;
-	paragraphs: boolean;
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
 	nativeProcessing: true,
-	paragraphs: true,
 };
+
+const PROCESSED_FLAG = 'obsidian-sheets-parsed';
 
 export class ObsidianSpreadsheet extends Plugin {
 	settings: PluginSettings;
 
 	async onload() {
-		this.loadSettings();
+		await this.loadSettings();
+
+		// The custom `sheet` code block keeps its own dedicated renderer.
 		this.registerMarkdownCodeBlockProcessor(
 			'sheet',
 			async (
@@ -26,176 +33,73 @@ export class ObsidianSpreadsheet extends Plugin {
 				el: HTMLTableElement,
 				ctx: MarkdownPostProcessorContext
 			) => {
-				source = source.trim();
-				ctx.addChild(
-					new SheetElement(
-						el,
-						source,
-						ctx,
-						this.app,
-						this
-					)
-				);
+				ctx.addChild(new SheetElement(el, source.trim(), ctx, this.app, this));
 			}
 		);
 
-		// this.registerMarkdownCodeBlockProcessor(
-		// 	'sheet_meta',
-		// 	async (
-		// 		source: string,
-		// 		el,
-		// 		ctx
-		// 	) =>
-		// 	{
-		// 		ctx.addChild(new MetaParser(el, source, ctx, this.app, this));
-		// 	}
-		// );
-		
-		this.registerMarkdownPostProcessor(async (el, ctx) => 
-		{
+		// Reading mode: augment Obsidian's natively-rendered tables in place.
+		this.registerMarkdownPostProcessor((el, ctx) => {
 			if (!this.settings.nativeProcessing) return;
 			if (ctx.frontmatter?.['disable-sheet'] === true) return;
 
-			const tableEls = el.querySelectorAll('table');
-			if (tableEls.length) {
-
-				for (const tableEl of Array.from(tableEls))
-				{
-					if (!tableEl) return;
-					if (tableEl?.id === 'obsidian-sheets-parsed') return;
-
-					const sec = ctx.getSectionInfo(tableEl);
-					let source: string = '';
-					if (!sec)
-					{
-						tableEl.querySelectorAll(':scope td').forEach(({ childNodes }) => childNodes.forEach(node => 
-						{
-							if (node.nodeType == 3) // Text node type
-								node.textContent = node.textContent?.replace(/[*_`[\]$()]|[~=]{2}/g, '\\$&') || '';
-							// See https://help.obsidian.md/Editing+and+formatting/Basic+formatting+syntax#Styling+text
-						}));
-						tableEl.querySelectorAll(':scope a.internal-link').forEach((link: HTMLAnchorElement) => 
-						{ 
-							const parsedLink = document.createElement('span');
-							parsedLink.innerText = `[[${link.getAttr('href')}|${link.innerText}]]`;
-							link.replaceWith(parsedLink);
-						});
-						tableEl.querySelectorAll(':scope span.math').forEach((link: HTMLSpanElement) =>
-							link.textContent?.trim().length ? link.textContent = `$${link.textContent || ''}$` : null
-						);
-
-						source = htmlToMarkdown(tableEl).trim().replace(/\\\\/g, '$&$&');
-						if (!source) return;
-					}
-					else
-					{
-						const {text, lineStart, lineEnd} = sec;
-						let textContent = text
-							.split('\n')
-							.slice(lineStart, 1 + lineEnd)
-							.map(line => line.replace(/^.*?(?=\|(?![^[]*]))/, ''));
-						const endIndex = textContent.findIndex(line => /^(?!\|)/.test(line));
-
-						if (textContent[0].startsWith('```')) return;
-						if (endIndex !== -1) textContent = textContent.slice(0, endIndex + 1);
-					
-						if (
-							!textContent
-								.filter((row) => /(?<!\\)\|/.test(row))
-								.map((row) => row.split(/(?<!\\)\|/)
-									.map(cell => cell.trim()))
-								.every(
-									(row) => !row.pop()?.trim() && !row.shift()?.trim()
-								)
-						) return; // Need a better way to figure out if not randering a table; use test for validity on actual table function here since if get to here table is valid.
-						source = textContent.join('\n');
-					}
-		
-					tableEl.empty();
-					ctx.addChild(new SheetElement(tableEl, source.trim(), ctx, this.app, this));
-				}
-				return;
+			for (const tableEl of Array.from(el.querySelectorAll('table'))) {
+				this.processReadingTable(tableEl, ctx);
 			}
-			const tableEl = el.closest('table');
-			if (!tableEl) return;
-			if (tableEl?.id === 'obsidian-sheets-parsed') return;
-
-			const rawMarkdown =
-				ctx.getSectionInfo(tableEl)?.text || htmlToMarkdown(tableEl);
-			const rawMarkdownArray =
-				rawMarkdown
-					.replace(/\n\s*\|\s*-+.*?(?=\n)/g, '') // remove newlines and heading delim
-					.replace(/^\||\|$/gm, '')
-					.split(/\||\n/g);
-			const toChange = rawMarkdownArray
-				.reduce((cum, curr, i) => {
-					/(?<!~|\\)~(?!~)|^(-+|<|\^)\s*$/.test(curr) &&
-						cum.push(i);
-					return cum;
-				}, [] as number[]);
-
-			const tableHead = Array.from(tableEl.querySelectorAll('th'));
-			const tableWidth = tableHead.length;
-			const DOMCellArray = [...tableHead, ...Array.from(tableEl.querySelectorAll('td'))];
-
-			for (const index of toChange) {
-				const column = index % tableWidth;
-				const row = Math.floor(index / tableWidth);
-				const cellContent = rawMarkdownArray[index];
-				if (/(?<!~|\\)~(?!~)/.test(cellContent)) {
-					const cellStyles = cellContent.split(/(?<![\\~])~(?!~)/)[1];
-					const classes = cellStyles.match(/(?<=\.)\S+/g)?.map(m => m.toString()) || [];
-
-					let cellStyle = {};
-
-					const inlineStyle = cellStyles.match(/\{.*\}/)?.[0] || '{}';
-					try {
-						cellStyle = { ...cellStyle, ...JSON5.parse(inlineStyle) };
-					}
-					catch
-					{
-						console.error(`Invalid cell style \`${inlineStyle}\``);
-					}
-
-					const DOMContent: HTMLTableCellElement = DOMCellArray[index].querySelector('.table-cell-wrapper') || DOMCellArray[index];
-					Object.assign(DOMContent.style, cellStyle);
-					DOMContent.classList.add(...classes);
-					DOMContent.innerText = DOMContent.innerText.split(/(?<![\\~])~(?!~)/)[0];
-				}
-				// merging currently does not work - the cells get merged but the `<`/`^` cells still stay on the table
-				// merge left
-				else if (/^\s*<\s*$/.test(cellContent) && column > 0) { 
-					if (!DOMCellArray[index - 1].colSpan) DOMCellArray[index - 1].colSpan = 1;
-					DOMCellArray[index - 1].colSpan += 1;
-					// .remove() does not work - table editor renders on top and rebuilds the cell
-					DOMCellArray[index].style.display = 'none'; 
-					delete DOMCellArray[index];
-					DOMCellArray[index] = DOMCellArray[index - 1];
-				}
-				// merge up
-				else if (/^\s*\^\s*$/.test(cellContent) && row > 1) {
-					if (!DOMCellArray[index - tableWidth].rowSpan) DOMCellArray[index - 1].rowSpan = 1;
-					DOMCellArray[index - tableWidth].rowSpan += 1;
-					DOMCellArray[index].style.display = 'none';
-					delete DOMCellArray[index];
-					DOMCellArray[index] = DOMCellArray[index - tableWidth];
-				} 
-				// TODO: row headers
-				// else if (/^\s*-+\s*$/.test(cellContent)) {
-				// } 
-				// classes and styling
-			}
-
-			return tableEl.id = 'obsidian-sheets-parsed';
-
 		});
+
+		// Live Preview: re-apply features to the interactive table widget.
+		this.registerEditorExtension(
+			sheetsLivePreviewExtension({
+				app: this.app,
+				isEnabled: () => this.settings.nativeProcessing,
+			})
+		);
 
 		this.addSettingTab(new SheetSettingsTab(this.app, this));
 	}
 
-	onunload() {
-		// console.log('unloading spreadsheet plugin');
+	/** Augment a single natively-rendered table in reading mode. */
+	private processReadingTable(
+		tableEl: HTMLTableElement,
+		ctx: MarkdownPostProcessorContext
+	) {
+		// Live Preview tables are handled by the editor extension, not here.
+		if (tableEl.closest('.cm-editor')) return;
+		if (tableEl.dataset.sheetsProcessed === 'true') return;
+
+		const source = this.getTableSource(tableEl, ctx);
+		if (!source) return;
+
+		const grid = buildGridFromRenderedTable(tableEl, source);
+		if (!grid) return;
+
+		tableEl.dataset.sheetsProcessed = 'true';
+		tableEl.classList.add(PROCESSED_FLAG);
+		try {
+			augmentGrid(grid);
+		} catch (e) {
+			console.error('[Sheets] reading mode augmentation failed', e);
+		}
 	}
+
+	/** Recover the Markdown source for a rendered table. */
+	private getTableSource(
+		tableEl: HTMLTableElement,
+		ctx: MarkdownPostProcessorContext
+	): string | null {
+		const sec = ctx.getSectionInfo(tableEl);
+		if (sec) {
+			return sec.text
+				.split('\n')
+				.slice(sec.lineStart, sec.lineEnd + 1)
+				.join('\n');
+		}
+		// Fallback (e.g. some embeds): reconstruct from the rendered DOM.
+		const md = htmlToMarkdown(tableEl).trim();
+		return md || null;
+	}
+
+	onunload() {}
 
 	async loadSettings() {
 		this.settings = Object.assign(
@@ -208,6 +112,44 @@ export class ObsidianSpreadsheet extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+}
+
+/**
+ * Pair a rendered table's DOM cells with their Markdown source text, dropping
+ * the delimiter row so the grid lines up 1:1 with `<thead>`/`<tbody>` rows.
+ */
+function buildGridFromRenderedTable(
+	tableEl: HTMLTableElement,
+	source: string
+): GridCell[][] | null {
+	const srcGrid = splitTableSource(source);
+	if (srcGrid.length < 2) return null;
+
+	const delimiter = findDelimiterRow(srcGrid);
+	const visualSrc =
+		delimiter >= 0 ? srcGrid.filter((_, i) => i !== delimiter) : srcGrid;
+
+	const headRows = Array.from(tableEl.tHead?.rows ?? []);
+	const bodyRows: HTMLTableRowElement[] = [];
+	for (const body of Array.from(tableEl.tBodies)) {
+		bodyRows.push(...Array.from(body.rows));
+	}
+	const domRows = [...headRows, ...bodyRows];
+	if (!domRows.length) return null;
+
+	const rowCount = Math.min(visualSrc.length, domRows.length);
+	const grid: GridCell[][] = [];
+	for (let r = 0; r < rowCount; r++) {
+		const domCells = Array.from(domRows[r].cells);
+		const srcRow = visualSrc[r];
+		const colCount = Math.min(domCells.length, srcRow.length);
+		const row: GridCell[] = [];
+		for (let c = 0; c < colCount; c++) {
+			row.push({ text: srcRow[c], el: domCells[c] });
+		}
+		grid.push(row);
+	}
+	return grid;
 }
 
 export default ObsidianSpreadsheet;

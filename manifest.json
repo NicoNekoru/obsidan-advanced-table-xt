@@ -1,7 +1,7 @@
 {
 	"id": "sheets",
 	"name": "Sheets Extended",
-	"version": "1.2.10",
+	"version": "1.2.11",
 	"minAppVersion": "1.5.0",
 	"description": "Vertical headers, merged cells, and custom css tables with advanced table compatibility",
 	"author": "NicoNekoru",

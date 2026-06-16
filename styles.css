@@ -7,6 +7,17 @@ If your plugin does not need CSS, delete this file.
 
 */
 
+/* Cells consumed by a merge (`<`/`^`) or the vertical-header marker column. */
+.sheets-hidden-cell {
+	display: none;
+}
+
+/* Row-header cells produced by a vertical-header (all-dashes) column. */
+.sheets-row-header {
+	font-weight: var(--font-semibold, 600);
+	background-color: var(--background-secondary);
+}
+
 .obs-sheets_error {
 	color: rgb(255, 100, 100);
 	background-color: rgba(240, 128, 128, 20%);
