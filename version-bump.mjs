@@ -30,16 +30,7 @@ console.log('building');
 execSync('pnpm run build', { stdio: 'inherit' });
 
 console.log('updating git');
-// Cross-platform: run each command separately with the platform's default shell
-// (bash/sh on macOS/Linux, cmd on Windows) instead of forcing powershell.exe.
-try
-{
-	execSync('git commit -am "version bump"', { stdio: 'inherit' });
-}
-catch
-{
-	console.log('nothing to commit');
-}
+execSync('git commit -am "version bump"', { stdio: 'inherit' });
 execSync('git push', { stdio: 'inherit' });
 execSync(
 	`gh release create ${targetVersion} main.js styles.css manifest.json --generate-notes`,
