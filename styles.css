@@ -1,11 +1,8 @@
-/*
-
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
+/* Native tables retain Obsidian's own scrolling and layout. */
+.sheets-table-scroll {
+	max-width: 100%;
+	overflow-x: auto;
+}
 
 /* Cells consumed by a merge (`<`/`^`) or the vertical-header marker column. */
 .sheets-hidden-cell {

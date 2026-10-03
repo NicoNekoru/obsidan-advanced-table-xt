@@ -1,357 +1,117 @@
-import { ObsidianSpreadsheet } from 'main';
 import {
-	App,
-	MarkdownPostProcessorContext,
+	type App,
+	type MarkdownPostProcessorContext,
 	MarkdownRenderChild,
 	MarkdownRenderer,
 } from 'obsidian';
 import type { Properties } from 'csstype';
 import * as JSON5 from 'json5';
-
-// TODO: Move these to settings
-const MERGE_UP_SIGNIFIER = '^',
-	MERGE_LEFT_SIGNIFIER = '<',
-	HEADER_DELIMETER = '-',
-	META_DELIMETER = '---';
+import { augmentGrid, type GridCell, type AugmentOptions } from './tableAugmenter';
+import { findDelimiterRow, findHeaderColumn, parseCell, parseStyleDirective, splitTableSource } from './tableModel';
 
 export interface ISheetMetaData {
-	classes: { [key: string]: Properties };
+	classes: Record<string, Properties>;
 	log: boolean;
 }
 
-type groupStyles = {
-	classes: string[]
-	styles: Properties
-}
-
+/** Render fenced sheets into a real table on desktop and mobile. */
 export class SheetElement extends MarkdownRenderChild {
-	private newLineRE: RegExp;
-	private cellBorderRE: RegExp;
-	private metaRE: RegExp;
-	private headerRE: RegExp;
-	private contentGrid: string[][];
-	private metadata: Partial<ISheetMetaData>;
-	private styles: Record<string, Properties>;
-	private globalStyle: Properties = {};
-	private cellMaxLength = 0;
-	private rowMaxLength = 0;
-	private headerRow: number;
-	private headerCol: number;
-	private rowStyles: groupStyles[] = [];
-	private colStyles: groupStyles[] = [];
-	private table: HTMLTableElement;
-	private tableHead: HTMLTableSectionElement;
-	private tableBody: HTMLTableSectionElement;
-	private domGrid: HTMLTableCellElement[][] = [];
-
+	private disposed = false;
 	constructor(
-		private readonly el: HTMLTableElement,
+		private readonly el: HTMLElement,
 		private readonly source: string,
 		private readonly ctx: MarkdownPostProcessorContext,
 		private readonly app: App,
-		private readonly plugin: ObsidianSpreadsheet,
 	) {
 		super(el);
-		// TODO: Handle settings here -> move :11-12
-		// console.log(this);
 	}
 
-	async onload() {
-		this.metaRE = new RegExp(String.raw`^${META_DELIMETER}\s*?(?:~(.*?))?\s*?\n+`, 'mg');
-		this.newLineRE = new RegExp(String.raw`\n`);
-		this.cellBorderRE = new RegExp(String.raw`(?<!\\)\|`);
-		this.headerRE = new RegExp(String.raw`^\s*?(:)?(?:${HEADER_DELIMETER})+?(:)?\s*?(?:(?<!\\)~(.*?))?$`);
-
-		// Parse code block input
-		this.parseInputToGrid();
-
-		// Check if grid is valid (every line starts and ends with `|`)
-		this.validateInput();
-
-		// Find and fix grid dimensions
-		this.normalizeGrid();
-
-		// Start building DOM element
-		this.table = this.el;
-		this.table.id = 'obsidian-sheets-parsed';
-		this.tableHead = this.table.createEl('thead');
-		this.tableBody = this.table.createEl('tbody');
-
-		// Find header boundaries
-		this.getHeaderBoundaries();
-
-		// Find header styles
-		this.getHeaderStyles();
-
-		// Build cells into DOM
-		this.buildDomTable();
-
-		// console.log(thisGrid);
-	}
-
-	onunload() { }
-
-	displayError(error?: string) {
-		this.el.createDiv({
-			text: `\nError: \`${error}\`\n\n`,
-			cls: 'obs-sheets_error',
-		});
-		this.unload();
-	}
-
-	parseInputToGrid() {
-		if (!this.metaRE.test(this.source)) return this.contentGrid =
-			this.source.split(this.newLineRE)
-				.filter((row) => this.cellBorderRE.test(row))
-				.map((row) => row.split(this.cellBorderRE)
-					.map(cell => cell.trim()));
-
-		const [meta, unparsedStyle, source] = this.source.split(this.metaRE);
-
-		this.parseMetadata(meta);
-
-		if (unparsedStyle) {
-			let cellStyle: Properties = {};
-			const cls = unparsedStyle.match(/\.\S+/g) || [];
-			cls.forEach(cssClass => {
-				cellStyle = { ...cellStyle, ...(this.styles?.[cssClass.slice(1)] || {}) };
-			});
-
-			const inlineStyle = unparsedStyle.match(/\{.*\}/)?.[0] || '{}';
-			try {
-				cellStyle = { ...cellStyle, ...JSON5.parse(inlineStyle) };
-			}
-			catch
-			{
-				console.error(`Invalid cell style \`${inlineStyle}\``);
-			}
-
-			this.globalStyle = cellStyle;
-		}
-
-		return this.contentGrid = source.split(this.newLineRE)
-			.map((row) => row.split(this.cellBorderRE)
-				.map(cell => cell.trim()));
-	}
-
-	parseMetadata(meta: string) {
-		let metadata: Partial<ISheetMetaData>;
-
-		try {
-			metadata = JSON5.parse(meta);
-		}
-		catch (error) {
-			return this.displayError('Metadata is not proper JSON');
-		}
-
-		this.metadata = metadata;
-
-		// Separate this out when more metadata is introduced
-		if (metadata.classes) {
-			this.styles = metadata.classes;
-		}
-		// TODO: Add logging and debugging in metadata
-		// if (metadata.log) this.logging = true
-	}
-
-	validateInput() {
-		if (
-			!this.contentGrid.every(
-				(row) => !row.pop()?.trim() && !row.shift()?.trim()
-			)
-		) return this.displayError('Malformed table');
-	}
-
-	normalizeGrid() {
-		for (let rowIndex = 0; rowIndex < this.contentGrid.length; rowIndex++) {
-			const row = this.contentGrid[rowIndex];
-			if (this.rowMaxLength < row.length) this.rowMaxLength = row.length;
-
-			for (let colIndex = 0; colIndex < row.length; colIndex++)
-				if (this.cellMaxLength < row[colIndex].trim().length)
-					this.cellMaxLength = row[colIndex].trim().length;
-		}
-
-		this.contentGrid = this.contentGrid.map((line) =>
-			Array.from(
-				{ ...line, length: this.rowMaxLength },
-				(cell) => cell || ''
-			)
-		);
-	}
-
-	getHeaderBoundaries() {
-		this.headerRow = this.contentGrid.findIndex(
-			(headerRow) =>
-				headerRow.every((headerCol) => this.headerRE.test(headerCol))
-		);
-
-		// transpose grid
-		this.headerCol = this.contentGrid[0].map((_, i) =>
-			this.contentGrid.map(row => row[i])
-		)
-			.findIndex(
-				(headerCol) =>
-					headerCol.every((headerCol) => this.headerRE.test(headerCol))
-			);
-	}
-
-	getHeaderStyles() {
-		// TODO: Add same syntax of custom styling as cells
-		if (this.headerRow !== -1) this.colStyles = this.contentGrid[this.headerRow].map(rowHead => {
-			let styles: Properties = {};
-
-			const alignment = rowHead.match(this.headerRE);
-			if (!alignment) return { classes: [], styles };
-			else if (alignment[1] && alignment[2]) styles['textAlign'] = 'center';
-			else if (alignment[1]) styles['textAlign'] = 'left';
-			else if (alignment[2]) styles['textAlign'] = 'right';
-
-			// Parse ~ (class names are stored without the leading dot)
-			const classes = alignment[3]?.match(/(?<=\.)\S+/g)?.map(String) || [];
-			classes.forEach(cssClass =>
-				styles = {
-					...styles,
-					...(this.styles?.[cssClass]
-							|| {}
-					)
-				}
-			);
-			return { classes, styles };
-		});
-
-		if (this.headerCol !== -1) this.rowStyles = this.contentGrid[0].map((_, i) =>
-			this.contentGrid.map(row => row[i])
-		)[this.headerCol].map(rowHead => {
-			let styles: Properties = {};
-
-			const alignment = rowHead.match(this.headerRE);
-			if (!alignment) return { classes: [], styles };
-			else if (alignment[1] && alignment[2]) styles['textAlign'] = 'center';
-			else if (alignment[1]) styles['textAlign'] = 'left';
-			else if (alignment[2]) styles['textAlign'] = 'right';
-
-			// Parse ~ (class names are stored without the leading dot)
-			const classes = alignment[3]?.match(/(?<=\.)\S+/g)?.map(String) || [];
-			classes.forEach(cssClass =>
-				styles = {
-					...styles,
-					...(this.styles?.[cssClass]
-							|| {}
-					)
-				}
-			);
-			return { classes, styles };
+	onload() {
+		this.disposed = false;
+		void this.renderTable().catch((error: unknown) => {
+			if (this.disposed) return;
+			this.el.replaceChildren();
+			const message = this.el.createDiv();
+			message.className = 'obs-sheets_error';
+			message.textContent = `Sheets Extended: ${error instanceof Error ? error.message : String(error)}`;
 		});
 	}
 
-	buildDomTable() {
-		for (
-			let rowIndex = 0;
-			rowIndex < this.contentGrid.length;
-			rowIndex++
-		) this.buildDomRow(rowIndex);
+	onunload() {
+		this.disposed = true;
 	}
 
-	buildDomRow(rowIndex: number) {
-		const rowContents = this.contentGrid[rowIndex];
-		let rowNode = this.tableBody.createEl('tr');
-
-		if (rowIndex < this.headerRow) rowNode = this.tableHead.createEl('tr');
-		else if (rowIndex === this.headerRow) return;
-
-		this.domGrid[rowIndex] = [];
-
-		for (
-			let columnIndex = 0;
-			columnIndex < rowContents.length;
-			columnIndex++
-		) this.buildDomCell(rowIndex, columnIndex, rowNode);
-	}
-
-	async buildDomCell(rowIndex: number, columnIndex: number, rowNode: HTMLElement) {
-		const [
-			cellContent,
-			cellStyles
-		] = this.contentGrid[rowIndex][columnIndex].split(/(?<![\\~])~(?!~)/);
-
-		let cls: string[] = [];
-		let cellStyle: Properties = this.globalStyle;
-
-		if (this.rowStyles[rowIndex]) {
-			cellStyle = { ...cellStyle, ...this.rowStyles[rowIndex].styles }; 
-			cls.push(...this.rowStyles[rowIndex].classes);
-		}
-		if (this.colStyles[columnIndex]) {
-			cellStyle = { ...cellStyle, ...this.colStyles[columnIndex].styles }; 
-			cls.push(...this.colStyles[columnIndex].classes);
-		}
-
-		if (cellStyles) {
-			cls = cellStyles.match(/(?<=\.)\S+/g) || [];
-			cls.forEach(cssClass => {
-				cellStyle = { ...cellStyle, ...(this.styles?.[cssClass] || {}) };
-			});
-
-			const inlineStyle = cellStyles.match(/\{.*\}/)?.[0] || '{}';
-			try {
-				cellStyle = { ...cellStyle, ...JSON5.parse(inlineStyle) };
+	private async renderTable() {
+		const lines = this.source.split('\n');
+		const separator = lines.findIndex(line => /^---(?:\s*~.*)?\s*$/.test(line));
+		let metadata: Partial<ISheetMetaData> = {};
+		let tableStyle: AugmentOptions['tableStyle'];
+		let source = this.source;
+		if (separator >= 0) {
+			const metaSource = lines.slice(0, separator).join('\n').trim();
+			const parsed: unknown = metaSource ? JSON5.parse(metaSource) : {};
+			if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+				throw new Error('Metadata must be a JSON object');
 			}
-			catch
-			{
-				console.error(`Invalid cell style \`${inlineStyle}\``);
+			metadata = parsed;
+			const styleSource = lines[separator].match(/^---\s*~(.*)$/)?.[1];
+			if (styleSource) tableStyle = parseStyleDirective(styleSource);
+			source = lines.slice(separator + 1).join('\n');
+		}
+
+		const sourceGrid = splitTableSource(source);
+		if (!sourceGrid.length) throw new Error('No table rows found');
+		const width = Math.max(...sourceGrid.map(row => row.length));
+		const normalized = sourceGrid.map(row => Array.from({ length: width }, (_, col) => row[col] ?? ''));
+		const delimiter = findDelimiterRow(normalized);
+		const visual = normalized.filter((_, row) => row !== delimiter);
+		const headerColumn = findHeaderColumn(visual);
+		const options: AugmentOptions = {
+			classes: metadata.classes,
+			tableStyle,
+			columns: delimiter >= 0 ? normalized[delimiter].map(parseCell) : undefined,
+			rows: headerColumn >= 0 ? visual.map(row => parseCell(row[headerColumn])) : undefined,
+		};
+
+		const doc = this.el.ownerDocument;
+		this.el.replaceChildren();
+		const scroll = this.el.createDiv();
+		scroll.className = 'sheets-table-scroll';
+		scroll.tabIndex = 0;
+		scroll.setAttribute('role', 'region');
+		scroll.setAttribute('aria-label', 'Sheet table');
+		const table = scroll.createEl('table');
+		table.className = 'obsidian-sheets-parsed';
+		table.dataset.sheetsProcessed = 'true';
+		if (tableStyle?.classes.length) table.classList.add(...tableStyle.classes);
+		const head = table.createTHead();
+		const body = table.createTBody();
+
+		const grid: GridCell[][] = [];
+		const rendering: Promise<void>[] = [];
+		for (let row = 0; row < visual.length; row++) {
+			const isHeader = delimiter >= 0 && row < delimiter;
+			const tr = (isHeader ? head : body).insertRow();
+			const cells: GridCell[] = [];
+			for (const text of visual[row]) {
+				const cell = tr.createEl(isHeader ? 'th' : 'td');
+				cell.dir = 'auto';
+				cells.push({ text, el: cell });
+				rendering.push(MarkdownRenderer.render(
+					this.app, '\u200B ' + text, cell, this.ctx.sourcePath, this,
+				).then(() => {
+					// Keep the nodes and event handlers used by links and embeds.
+					const paragraph = cell.firstElementChild;
+					if (paragraph?.tagName === 'P') paragraph.replaceWith(...Array.from(paragraph.childNodes));
+					const walker = doc.createTreeWalker(cell, 4 /* SHOW_TEXT */);
+					const first = walker.nextNode() as Text | null;
+					if (first) first.data = first.data.replace(/^\u200B /, '');
+				}));
 			}
+			grid.push(cells);
 		}
-
-		let cellTag: keyof HTMLElementTagNameMap = 'td';
-		let cell: HTMLTableCellElement;
-
-		if (columnIndex === this.headerCol || rowIndex === this.headerRow) return;
-		else if (columnIndex < this.headerCol || rowIndex < this.headerRow) cellTag = 'th';
-
-		if (cellContent == MERGE_LEFT_SIGNIFIER && this.domGrid?.[rowIndex]?.[columnIndex - 1]) {
-			cell = this.domGrid[rowIndex][columnIndex - 1];
-			cell?.colSpan || Object.assign(cell, { colSpan: 1 });
-			cell.colSpan = columnIndex - parseInt(cell.getAttribute('col-index') || columnIndex.toString()) + 1;
-		}
-		else if (cellContent == MERGE_UP_SIGNIFIER && this.domGrid?.[rowIndex - 1]?.[columnIndex]) {
-			cell = this.domGrid[rowIndex - 1][columnIndex];
-			cell?.rowSpan || Object.assign(cell, { rowSpan: 1 });
-			cell.rowSpan = rowIndex - parseInt(cell.getAttribute('row-index') || '0') + 1;
-		}
-		else if (
-			this.domGrid?.[rowIndex - 1]?.[columnIndex] && this.domGrid?.[rowIndex]?.[columnIndex - 1] &&
-			this.domGrid[rowIndex][columnIndex - 1] === this.domGrid[rowIndex - 1][columnIndex]
-		) cell = this.domGrid[rowIndex][columnIndex - 1];
-		else {
-			// const contentCell = document.createElement('div');
-			// contentCell.classList.add('table-cell-wrapper');
-
-			cell = rowNode.createEl(cellTag, { cls });
-			cell.setAttribute('row-index', rowIndex.toString());
-			cell.setAttribute('col-index', columnIndex.toString());
-
-			// RTL support (kinda)
-			cell.setAttribute('dir', 'auto');
-
-			MarkdownRenderer.render(
-				this.app,
-				'\u200B ' + (cellContent || '\u200B'), // Make sure markdown that requires to be at the start of a line is not rendered
-				cell,
-				'',
-				this
-			).then(() => {
-				cell.innerHTML =
-					cell
-						.children[0]
-						.innerHTML
-						.replace(/^\u200B /g, '');
-				// cell.append(contentCell);
-			});
-			Object.assign(cell.style, cellStyle);
-		}
-
-		return this.domGrid[rowIndex][columnIndex] = cell;
+		await Promise.all(rendering);
+		// Do not mutate a removed render child after the asynchronous render.
+		if (!this.disposed && this.el.contains(table)) augmentGrid(grid, options);
 	}
 }
-

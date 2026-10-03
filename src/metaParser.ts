@@ -3,10 +3,8 @@ import {
 	App,
 	MarkdownPostProcessorContext,
 	MarkdownRenderChild,
-	MarkdownView,
 } from 'obsidian';
 import * as JSON5 from 'json5';
-import { ISheetMetaData } from 'sheetElement';
 
 export class MetaParser extends MarkdownRenderChild 
 {
@@ -24,7 +22,7 @@ export class MetaParser extends MarkdownRenderChild
 	onload(): void 
 	{
 		this.el.id = 'sheet-metadata';
-		JSON5.parse(this.source) as ISheetMetaData;
+		JSON5.parse(this.source);
 	}
 	
 	onunload(): void 

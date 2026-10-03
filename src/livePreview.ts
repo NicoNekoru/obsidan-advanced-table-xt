@@ -1,6 +1,8 @@
 import { ViewPlugin, type PluginValue, type ViewUpdate, type EditorView } from '@codemirror/view';
-import { type App, editorInfoField } from 'obsidian';
+import { type App, editorInfoField, editorLivePreviewField } from 'obsidian';
 import { augmentGrid, revertTable, type GridCell } from './tableAugmenter';
+import { getTableWidgets, type InternalTableWidget } from './tableWidgets';
+import { isSheetDisabled } from './tableModel';
 
 /** Minimal surface the Live Preview extension needs from the plugin. */
 export interface SheetsLivePreviewHost {
@@ -21,40 +23,12 @@ export interface SheetsLivePreviewHost {
  * (colspan/rowspan + hidden) layout desyncs from the model and breaks selection
  * and cell editing. We detect "this table is active" (focus inside it, the doc
  * selection overlaps it, or it has selected cells) and revert just that table,
- * and additionally un-merge synchronously on `mousedown` so a click lands on the
+ * and additionally un-merge synchronously on `pointerdown` so a click lands on the
  * real native cell rather than a merged placeholder.
  *
- * These widgets are private API: we read `child.widget.{rows,tableEl,start,end,
+ * These widgets are private API: we read `dom.cmTile/cmView.widget.{rows,tableEl,start,end,
  * selectedCells}` and each cell's `{text, el, contentEl}`, all defensively.
  */
-
-interface InternalCell {
-	text?: string;
-	el?: HTMLTableCellElement;
-	contentEl?: HTMLElement;
-}
-interface InternalTableWidget {
-	rows?: InternalCell[][];
-	tableEl?: HTMLTableElement;
-	start?: number;
-	end?: number;
-	selectedCells?: unknown[];
-}
-
-function getTableWidgets(view: EditorView): InternalTableWidget[] {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const docView = (view as any).docView;
-	const children = docView?.children;
-	if (!Array.isArray(children)) return [];
-	const widgets: InternalTableWidget[] = [];
-	for (const child of children) {
-		const dom: HTMLElement | undefined = child?.dom;
-		if (!dom?.classList?.contains('cm-table-widget')) continue;
-		const widget: InternalTableWidget | undefined = child.widget;
-		if (widget?.rows) widgets.push(widget);
-	}
-	return widgets;
-}
 
 /**
  * Is the user currently interacting with this table? Obsidian edits a cell in a
@@ -76,14 +50,15 @@ function isTableActive(widget: InternalTableWidget, view: EditorView): boolean {
 }
 
 function augmentEditor(view: EditorView, host: SheetsLivePreviewHost) {
-	const widgets = getTableWidgets(view);
+	const widgets = getTableWidgets(view.dom);
 	if (!widgets.length) return;
 
 	// Honour the global setting and the per-file `disable-sheet: true` frontmatter.
 	const file = view.state.field(editorInfoField, false)?.file;
 	const frontmatterDisabled =
-		!!file && host.app.metadataCache.getFileCache(file)?.frontmatter?.['disable-sheet'] === true;
-	const enabled = host.isEnabled() && !frontmatterDisabled;
+		!!file && isSheetDisabled(host.app.metadataCache.getFileCache(file)?.frontmatter);
+	const enabled = host.isEnabled() && !frontmatterDisabled &&
+		view.state.field(editorLivePreviewField, false) !== false;
 
 	for (const widget of widgets) {
 		// Disabled, or being edited/selected → show Obsidian's plain native grid.
@@ -111,6 +86,7 @@ export function sheetsLivePreviewExtension(host: SheetsLivePreviewHost) {
 			private frame = 0;
 
 			constructor(private view: EditorView) {
+				this.view.dom.addEventListener('pointerdown', this.onMouseDown, true);
 				this.view.dom.addEventListener('mousedown', this.onMouseDown, true);
 				this.view.dom.addEventListener('focusin', this.onInteract);
 				this.view.dom.addEventListener('focusout', this.onInteract);
@@ -133,7 +109,7 @@ export function sheetsLivePreviewExtension(host: SheetsLivePreviewHost) {
 			private onMouseDown = (event: MouseEvent) => {
 				const target = event.target as Node | null;
 				if (target) {
-					for (const widget of getTableWidgets(this.view)) {
+					for (const widget of getTableWidgets(this.view.dom)) {
 						if (widget.tableEl?.contains(target)) {
 							revertTable(widget.tableEl);
 							break;
@@ -146,8 +122,10 @@ export function sheetsLivePreviewExtension(host: SheetsLivePreviewHost) {
 			private onInteract = () => this.schedule();
 
 			private schedule() {
-				if (this.frame) cancelAnimationFrame(this.frame);
-				this.frame = requestAnimationFrame(() => {
+				const win = this.view.dom.ownerDocument.defaultView;
+				if (!win) return;
+				if (this.frame) win.cancelAnimationFrame(this.frame);
+				this.frame = win.requestAnimationFrame(() => {
 					this.frame = 0;
 					try {
 						augmentEditor(this.view, host);
@@ -158,7 +136,12 @@ export function sheetsLivePreviewExtension(host: SheetsLivePreviewHost) {
 			}
 
 			destroy() {
-				if (this.frame) cancelAnimationFrame(this.frame);
+				const win = this.view.dom.ownerDocument.defaultView;
+				if (this.frame) win?.cancelAnimationFrame(this.frame);
+				for (const widget of getTableWidgets(this.view.dom)) {
+					if (widget.tableEl) revertTable(widget.tableEl);
+				}
+				this.view.dom.removeEventListener('pointerdown', this.onMouseDown, true);
 				this.view.dom.removeEventListener('mousedown', this.onMouseDown, true);
 				this.view.dom.removeEventListener('focusin', this.onInteract);
 				this.view.dom.removeEventListener('focusout', this.onInteract);

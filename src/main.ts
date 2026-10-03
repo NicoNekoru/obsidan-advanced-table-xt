@@ -1,12 +1,13 @@
 import {
 	MarkdownPostProcessorContext,
 	Plugin,
+	MarkdownRenderChild,
 	htmlToMarkdown,
 } from 'obsidian';
 import { SheetSettingsTab } from './settings';
 import { SheetElement } from './sheetElement';
-import { augmentGrid, type GridCell } from './tableAugmenter';
-import { findDelimiterRow, splitTableSource } from './tableModel';
+import { augmentGrid, revertTable, type GridCell } from './tableAugmenter';
+import { findDelimiterRow, splitTableSource, isSheetDisabled } from './tableModel';
 import { sheetsLivePreviewExtension } from './livePreview';
 
 interface PluginSettings {
@@ -21,6 +22,7 @@ const PROCESSED_FLAG = 'obsidian-sheets-parsed';
 
 export class ObsidianSpreadsheet extends Plugin {
 	settings: PluginSettings;
+	private readingTables = new Set<HTMLTableElement>();
 
 	async onload() {
 		await this.loadSettings();
@@ -28,19 +30,19 @@ export class ObsidianSpreadsheet extends Plugin {
 		// The custom `sheet` code block keeps its own dedicated renderer.
 		this.registerMarkdownCodeBlockProcessor(
 			'sheet',
-			async (
+			(
 				source: string,
-				el: HTMLTableElement,
+				el: HTMLElement,
 				ctx: MarkdownPostProcessorContext
 			) => {
-				ctx.addChild(new SheetElement(el, source.trim(), ctx, this.app, this));
+				ctx.addChild(new SheetElement(el, source.trim(), ctx, this.app));
 			}
 		);
 
 		// Reading mode: augment Obsidian's natively-rendered tables in place.
 		this.registerMarkdownPostProcessor((el, ctx) => {
 			if (!this.settings.nativeProcessing) return;
-			if (ctx.frontmatter?.['disable-sheet'] === true) return;
+			if (isSheetDisabled(ctx.frontmatter)) return;
 
 			for (const tableEl of Array.from(el.querySelectorAll('table'))) {
 				this.processReadingTable(tableEl, ctx);
@@ -73,11 +75,20 @@ export class ObsidianSpreadsheet extends Plugin {
 		const grid = buildGridFromRenderedTable(tableEl, source);
 		if (!grid) return;
 
-		tableEl.dataset.sheetsProcessed = 'true';
-		tableEl.classList.add(PROCESSED_FLAG);
 		try {
 			augmentGrid(grid);
+			tableEl.dataset.sheetsProcessed = 'true';
+			tableEl.classList.add(PROCESSED_FLAG);
+			this.readingTables.add(tableEl);
+			const tables = this.readingTables;
+			ctx.addChild(new class extends MarkdownRenderChild {
+				onunload() {
+					revertReadingTable(tableEl);
+					tables.delete(tableEl);
+				}
+			}(tableEl));
 		} catch (e) {
+			revertReadingTable(tableEl);
 			console.error('[Sheets] reading mode augmentation failed', e);
 		}
 	}
@@ -99,14 +110,17 @@ export class ObsidianSpreadsheet extends Plugin {
 		return md || null;
 	}
 
-	onunload() {}
+	onunload() {
+		for (const table of this.readingTables) revertReadingTable(table);
+		this.readingTables.clear();
+	}
 
 	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			await this.loadData()
-		);
+		const data: unknown = await this.loadData();
+		const value = data && typeof data === 'object' ? (data as Record<string, unknown>).nativeProcessing : undefined;
+		this.settings = {
+			nativeProcessing: typeof value === 'boolean' ? value : DEFAULT_SETTINGS.nativeProcessing,
+		};
 	}
 
 	async saveSettings() {
@@ -153,3 +167,9 @@ function buildGridFromRenderedTable(
 }
 
 export default ObsidianSpreadsheet;
+
+function revertReadingTable(table: HTMLTableElement) {
+	revertTable(table);
+	delete table.dataset.sheetsProcessed;
+	table.classList.remove(PROCESSED_FLAG);
+}

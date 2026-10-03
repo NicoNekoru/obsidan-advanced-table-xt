@@ -14,12 +14,37 @@ import type { Properties } from 'csstype';
 export const MERGE_LEFT = '<';
 export const MERGE_UP = '^';
 
+export function isSheetDisabled(frontmatter: unknown): boolean {
+	return !!frontmatter && typeof frontmatter === 'object' &&
+		(frontmatter as Record<string, unknown>)['disable-sheet'] === true;
+}
+
 /**
- * Matches a single, un-escaped `~` (the cell-style separator) that is not part
- * of a `~~strikethrough~~`. Used to split a cell into "visible content" and
- * "trailing style directive".
+ * Matches the start of a class/JSON style suffix. Escape and code-span checks
+ * are handled by findStyleSeparator rather than regex lookbehind.
  */
-export const CELL_STYLE_SEPARATOR = /(?<![\\~])~(?!~)/;
+export const CELL_STYLE_SEPARATOR = /~(?=\s*[.{])/;
+
+/** Find a style suffix, ignoring escapes, code spans and other plugins' tildes. */
+export function findStyleSeparator(text: string): number {
+	let codeTicks = 0;
+	for (let i = 0; i < text.length; i++) {
+		if (text[i] === '\\') { i++; continue; }
+		if (text[i] === '`') {
+			let ticks = 1;
+			while (text[i + ticks] === '`') ticks++;
+			if (codeTicks === ticks) codeTicks = 0;
+			else if (!codeTicks && text.indexOf('`'.repeat(ticks), i + ticks) >= 0) codeTicks = ticks;
+			i += ticks - 1;
+			continue;
+		}
+		if (!codeTicks && text[i] === '~' && !/[~=]/.test(text[i - 1] || '') &&
+			text.slice(i).search(CELL_STYLE_SEPARATOR) === 0) {
+			return i;
+		}
+	}
+	return -1;
+}
 
 /** A cell that contains only dashes (with optional alignment colons). */
 const DASH_ONLY = /^\s*:?-+:?\s*$/;
@@ -58,12 +83,16 @@ export function parseStyleDirective(directive: string): { classes: string[]; sty
 	const inline = inlineMatch?.[0];
 	const classPart = inlineMatch ? directive.replace(inlineMatch[0], '') : directive;
 
-	const classes = (classPart.match(/(?<=\.)\S+/g) || []).map(String);
+	const classes = Array.from(classPart.matchAll(/\.([^\s.{}]+)/g), match => match[1]);
 
 	let style: Properties = {};
 	if (inline) {
 		try {
-			style = JSON5.parse(inline);
+			const value: unknown = JSON5.parse(inline);
+			if (value && typeof value === 'object' && !Array.isArray(value)) {
+				style = Object.fromEntries(Object.entries(value).filter(([, v]) =>
+					typeof v === 'string' || typeof v === 'number'));
+			}
 		} catch {
 			console.error(`[Sheets] Invalid cell style \`${inline}\``);
 		}
@@ -75,10 +104,10 @@ export function parseStyleDirective(directive: string): { classes: string[]; sty
 export function parseCell(raw: string): ParsedCell {
 	const trimmed = raw.trim();
 
-	const parts = raw.split(CELL_STYLE_SEPARATOR);
-	const hasStyle = parts.length > 1;
-	const visible = parts[0];
-	const directive = hasStyle ? parts.slice(1).join('~') : '';
+	const separator = findStyleSeparator(raw);
+	const hasStyle = separator >= 0;
+	const visible = hasStyle ? raw.slice(0, separator) : raw;
+	const directive = hasStyle ? raw.slice(separator + 1) : '';
 
 	const { classes, style } = hasStyle
 		? parseStyleDirective(directive)
@@ -99,8 +128,8 @@ export function parseCell(raw: string): ParsedCell {
 		raw,
 		trimmed,
 		visible,
-		mergeLeft: trimmed === MERGE_LEFT,
-		mergeUp: trimmed === MERGE_UP,
+		mergeLeft: visible.trim() === MERGE_LEFT,
+		mergeUp: visible.trim() === MERGE_UP,
 		dashOnly: DASH_ONLY.test(visible.trim()),
 		hasStyle,
 		classes,
@@ -117,9 +146,18 @@ export function parseCell(raw: string): ParsedCell {
 export function splitTableSource(source: string): string[][] {
 	return source
 		.split('\n')
-		.filter(line => /(?<!\\)\|/.test(line))
 		.map(line => {
-			const cells = line.split(/(?<!\\)\|/).map(c => c.trim());
+			const cells: string[] = [];
+			let start = 0;
+			for (let i = 0; i < line.length; i++) {
+				if (line[i] === '\\') { i++; continue; }
+				if (line[i] === '|') {
+					cells.push(line.slice(start, i).trim());
+					start = i + 1;
+				}
+			}
+			if (!cells.length) return [];
+			cells.push(line.slice(start).trim());
 			// Drop the empty cell before the first pipe and after the last pipe.
 			if (cells.length && cells[0] === '') cells.shift();
 			if (cells.length && cells[cells.length - 1] === '') cells.pop();
@@ -130,7 +168,7 @@ export function splitTableSource(source: string): string[][] {
 
 /** Index of the all-dashes delimiter row (the `| --- | --- |` line), or -1. */
 export function findDelimiterRow(grid: string[][]): number {
-	return grid.findIndex(row => row.length > 0 && row.every(cell => DASH_ONLY.test(cell)));
+	return grid.findIndex(row => row.length > 0 && row.every(cell => parseCell(cell).dashOnly));
 }
 
 /**
@@ -141,13 +179,14 @@ export function findHeaderColumn(gridWithoutDelimiter: string[][]): number {
 	if (!gridWithoutDelimiter.length) return -1;
 	const width = Math.max(...gridWithoutDelimiter.map(r => r.length));
 	for (let col = 0; col < width; col++) {
-		let sawCell = false;
+		let sawDash = false;
 		const allDash = gridWithoutDelimiter.every(row => {
 			if (col >= row.length) return true; // ragged row – treat as non-blocking
-			sawCell = true;
-			return DASH_ONLY.test(row[col]);
+			const parsed = parseCell(row[col]);
+			if (parsed.dashOnly) sawDash = true;
+			return parsed.dashOnly || (col > 0 && parsed.mergeLeft);
 		});
-		if (sawCell && allDash) return col;
+		if (sawDash && allDash) return col;
 	}
 	return -1;
 }
